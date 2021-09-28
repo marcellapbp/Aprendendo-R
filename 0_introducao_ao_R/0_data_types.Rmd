@@ -1,0 +1,113 @@
+---
+title: "Data Types"
+author: "Marcella Pedro"
+date: "27/09/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Objetivo desta iniciativa
+
+Esse é o primeiro projeto de R, o intuito é:
+
+* Praticar a Linguagem durante o uso da plataforma [Dataquest](https://www.dataquest.io/) 
+* Manter um código para consulta quando necessário
+* Compartilhar conhecimento com iniciantes 
+
+Obs.: A utilização do rmarkdown foi possível com auxílio das dicas contidas [nesse link](https://www.dataquest.io/blog/r-markdown-guide-cheatsheet/)
+
+# Tipos de Dados
+
+## Logical
+
+Para armazenar valores lógicos (ou booleanos) usar:
+
+* `TRUE` ou `T` para Verdadeiro
+* `FALSE` ou `F` para Falso 
+
+Note que todas as letras estão em maiúsculo, pois o R não reconhece True ou False.
+
+O `class` indica o tipo de dado da variável.
+
+```{r logical}
+true_variable  = TRUE
+class(true_variable)
+
+false_variable = FALSE
+class(false_variable)
+
+t_variable = T
+class(t_variable)
+
+f_variable = F
+class(f_variable)
+```
+
+## Integer
+
+Para armazenar números inteiros, além dos dígitos, é necessário que o número esteja acompanhado da letra `L`, pois indica que é inteiro, sem isso o R entende que é do tipo Numeric.
+
+```{r integer}
+integer_number = 120L
+class(integer_number)
+```
+
+## Numeric
+
+Para o R, qualquer número não seguido da letra `L` é numérico, independente de ter vírgula indicando decimais ou não.
+
+```{r numeric}
+numeric_number = 120
+class(numeric_number)
+
+numeric_number1 = 120.0
+class(numeric_number1)
+
+numeric_number2 = 120.1
+class(numeric_number2)
+```
+
+
+## Character
+
+O tipo texto é indicado pelas aspas simples ou duplas ao redor do texto desejado.
+
+Note que os exemplos abaixo TRUE, 120L, ou 120 são todos considerados como texto devido às aspas.
+
+```{r character}
+text = "texto"
+class(text)
+
+text1 = 'texto'
+class(text)
+
+text2 = "TRUE"
+class(text2)
+
+text3 = "120L"
+class(text3)
+
+text4 = "120"
+class(text4)
+```
+
+# Operações Aritméticas
+
+Segue abaixo alguns exemplos de operações mais básicas:
+
+```{r arithmetic operators}
+10 + 10 #Adição
+10 - 10 #Subtração
+10 * 10 #Multiplicação
+10 / 10 #Divisão
+10 ^ 2  #Exponenciação
+10 %/% 3  #Divisão Inteira
+10 %% 3   #Módulo (Resto da Divisão)
+```
+
+
+Fico à disposição para sugestões, dúvidas, críticas...
+
+# Obrigada!
