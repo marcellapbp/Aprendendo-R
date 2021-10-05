@@ -1,0 +1,95 @@
+---
+title: "Data Manipulation"
+author: "Marcella Pedro"
+date: "04/10/2021"
+#output: html_document
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Manipulação de Dados
+
+É muito comum manipular datasets ao analisar dados.
+Abaixo seguem alguns comandos mais básicos e importantes para essa atividade.
+
+## Instalar Pacotes
+
+Antes mesmo de importar bibliotecas, pode ser necessário instalar o pacote e assim poder importa-lo ao projeto.
+As bibliotecas ficam alocadas no repositório [Comprehensive R Archive Network (CRAN)](https://cran.r-project.org/) junto de muitas informações relevantes.
+No exemplo abaixo o código irá instalar a biblioteca **readr**.
+
+`install.packages("readr")`
+
+
+## Importar Bibliotecas
+
+O comando abaixo demostra como importar uma biblioteca uma vez que já instalada.
+
+A biblioteca **readr** é destinada para realizar a leitura de arquivos com dados tabulados e separados por um delimitador. 
+
+CSV é um exemplo de dados em formato de tabela separados por vírgula ou ponto e vírgula.
+
+```{r libraries}
+library(readr)
+```
+
+## Importando Dataset
+
+No trecho abaixo estamos importando o dataset do Titanic disponível no Kaggle:
+
+*Obs.: No RStudio existe uma forma de importar datasets via interface, através do botão "Import Dataset", escolhendo o tipo de arquivo a ser importado e internamente o próprio RStudio já executa a importação da biblioteca necessária e a importação do arquivo.*
+
+```{r import_dataset}
+titanic <- read_csv("titanic.csv")
+```
+
+## Informações sobre o Dataset
+
+Para checar os dados que acabamos de importar, aqui vão algumas funções importantes:
+
+**Quantidade de Colunas**
+```{r columns}
+ncol(titanic) 
+```
+
+**Quantidade de linhas**
+```{r rows}
+nrow(titanic)
+```
+
+**Nome das Colunas**
+```{r column_names}
+colnames(titanic)
+```
+Ou se preferir...
+```{r column_names_alternative}
+names(titanic)
+```
+
+**Visualizar primeiras linhas**
+```{r head}
+head(titanic)
+```
+
+**Visualizar últimas linhas**
+```{r tail}
+tail(titanic)
+```
+
+## Gráficos
+
+Um exemplo muito simples de como visualizar os dados de forma gráfica:
+
+```{r ggplot2}
+
+library(ggplot2)
+
+qplot(x = PassengerId,
+      y = Age,
+      color = Sex,
+      data = titanic)
+```
+
