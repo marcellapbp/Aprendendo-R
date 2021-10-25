@@ -2,7 +2,8 @@
 title: "Data Types"
 author: "Marcella Pedro"
 date: "27/09/2021"
-output: html_document
+#output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
