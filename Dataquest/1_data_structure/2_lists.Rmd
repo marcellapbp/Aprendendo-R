@@ -1,0 +1,112 @@
+---
+title: "Lists"
+author: "Marcella Pedro"
+date: "25/10/2021"
+#output: html_document
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Listas
+
+Lista é uma estrutura de dados que permite armazenar conjuntos de dados de tipos distintos.
+
+## Criar uma lista
+
+**Através da função list**
+
+```{r list}
+lista_mercado <- list("arroz", "feijão", "fubá")
+lista_mercado
+```
+
+Exemplo com tipos diferentes
+
+```{r diff_types}
+diff_types <- list("text", 1, 2, TRUE, "lalala")
+diff_types
+```
+
+Com rótulos
+
+```{r labeled_list}
+formulario <- list(nome="Marcella", idade=26, tamanho=1.60, maior_idade=TRUE)
+formulario
+```
+
+**A partir de vetores**
+
+```{r from_vectors}
+numeros <- c(1,2,3,4,5)
+letras <- c("a", "b", "c", "d", "e")
+
+alfanum <- list(numeros, letras)
+alfanum
+```
+
+## Extrair informação de uma lista
+
+**Acessar os rótulos adicionados a cada posição da lista**
+
+```{r acess_names}
+names(formulario)
+```
+
+**Acessar uma posição que retorna como lista colchetes simples []**
+
+O tipo do dado retornado é lista, pois não acessou o elemento.
+```{r access_values}
+formulario[1]
+class(formulario[1])
+```
+
+**Acessar uma posição como elemento único colchetes duplos [[]]**
+
+Traz o tipo do dado (nesse caso texto)
+```{r access_values2}
+formulario[[1]]
+class(formulario[[1]])
+```
+
+**Acessar uma posição como elemento único símbolo de dóĺar $**
+
+Também traz o tipo do dado
+```{r access_values3}
+formulario$nome
+class(formulario$nome)
+```
+
+
+**Acessar a posição do vetor dentro da lista**
+
+Acessa a segunda posição da lista que possui a sequência *abcde*, e então seleciona a terceira posição retornando a letra **c**
+```{r acess_vector}
+alfanum[[c(2,3)]]
+```
+
+## Modificar valores de uma lista
+
+**Alterando uma posiçãpo do vetor na primeira posição da lista**
+```{r modify_values}
+alfanum[[c(1,1)]] <- "a"
+alfanum[[2]] <- c(10,9,8,7,6)
+
+alfanum
+```
+
+**Adicionando valores à lista**
+
+```{r append}
+formulario[["teste"]] <- diff_types
+formulario
+```
+
+## Eliminar valores de uma lista
+
+Elimina toda a lista presente na posição 5 da lista principal
+```{r delete_value}
+formulario[-5]
+```
