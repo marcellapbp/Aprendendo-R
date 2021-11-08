@@ -1,0 +1,275 @@
+---
+title: "Dataframes"
+author: "Marcella Pedro"
+date: "01/11/2021"
+#output: html_document
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Dataframes
+
+Dataframe é uma estrutura de dados conhecida como tabular, pois é organizada em linhas e colunas que lembra muito a estrutura de um excel por exemplo.
+
+Dados tabulares podem ser armazenados de muitas formas, **xlsx**, extensão utilizada pelo Excel conforme já mencionado, ou Google Sheets. Também podemos usar a extensão **csv** *(Comma-separated Values)* que como o nome indica é separado por vírgulas, também podemos separar por ponto e vírgula, pipeline, espaçamentos definidos e etc.
+
+No fim conseguimos visualizar todas as estruturas acima em um formato de tabela, onde as colunas armazenam uma informação em comum com um rótulo e cada linha possui um índice geralmente começado em 1.
+
+No ```tidyverse``` temos um tipo especial de *dataframe* chamado *tibble*.
+
+## Importar Bibliotecas para manipular dataframes
+
+### ```readr```
+
+Para ler um arquivo csv, também muito conhecido como *flat file data*, e armazenar em um formato tabular, em outras palavras em um dataframe, usamos a função ```read_csv``` do pacote ```readr```
+
+Como resultado temos um tibble.
+```{r readr}
+library(readr)
+```
+
+Lendo dataset separado por **vírgulas**.
+```{r readr_comma}
+df_virg <- read_csv("~/Documentos/Dataquest/dados_virgula.csv")
+df_virg
+```
+
+Lendo dataset separado por **ponto e vírgulas**.
+```{r readr_semicolon}
+df_pont_virg <- read_delim("~/Documentos/Dataquest/dados_ponto_virgula.csv", delim=";")
+df_pont_virg
+```
+
+Lendo dataset separado por **pipeline**.
+```{r readr_pipeline}
+df_pipe <- read_delim("~/Documentos/Dataquest/dados_pipeline.csv", delim="|")
+df_pipe
+```
+
+Lendo dataset separado por **espaços**.
+```{r readr_space}
+df_space <- read_delim("~/Documentos/Dataquest/dados_espaco.csv", delim="\t")
+df_space
+```
+
+### ```readxl```
+
+Biblioteca para leitura de Excel **(xlsx)**
+```{r readxl}
+library(readxl)
+```
+
+```{r readxl_xlsx}
+df_excel <- read_xlsx("~/Documentos/Dataquest/dados_excel.xlsx")
+df_excel
+```
+
+## Coletar informações de um dataframe
+
+### ```View()```
+
+Para visualizar um dataframe por completo, basta apenas executar o nome do dataframe, mas esta função abre uma janela dedicada
+
+```{r view}
+View(df_virg)
+```
+
+### ```head()``` ou ```tail()```
+
+Para visualizar as primeiras linhas ou últimas.
+
+```{r head}
+head(df_virg)
+```
+
+
+### ```glimpse()```
+
+Para um compilado de informações básicas.
+
+```{r glimpse}
+library(tibble)
+glimpse(df_virg)
+```
+
+### Número de linhas
+
+```{r crow_n}
+nrow(df_virg)
+```
+
+### Número de colunas
+
+```{r col_n}
+ncol(df_virg)
+```
+
+### Nome das colunas
+
+```{r col_names}
+names(df_virg)
+```
+
+## Selecionar ou filtrar parte do Dataframe
+
+### ```select()```
+
+Seleciona uma ou mais colunas.
+
+```{r select}
+library(dplyr)
+select(df_virg, nome)
+```
+
+Ou seleciona todas colunas exceto as destacadas.
+
+```{r non_select}
+
+select(df_virg, -nome)
+```
+
+### ```filter()```
+
+Filtra o dataframe de acordo com uma condição.
+
+```{r filter}
+filter(df_virg, idade >= 26)
+```
+
+É possível filtrar várias condições em conjunto.
+
+```{r filter_combined}
+filter(df_virg, 
+       idade > 24,
+       idade < 28)
+```
+
+## Pipe operator ``` %>% ```
+
+O pipe ``` %>% ``` é uma forma de aninhar várias operações em um tibble sem necessidade de ficar criando variáveis temporárias para armazenar os valores até chegar no resultado desejado.
+Assim o resultado de uma operação já se torna o input da função seguinte.
+
+No exemplo abaixo foi possível em uma única operação filtrar resultados onde a idade é maior que 24 e apenas trazer os nomes.
+```{r pipe}
+df_final <- df_virg %>% 
+              filter(idade > 24) %>% 
+              select(nome)
+                        
+df_final
+```
+
+Esse operador também funciona com outras estruturas apesar de ser comum em dataframes.
+
+```{r pipe_2}
+c(1,2,3,4) %>% sum()
+```
+
+## Alterar um dataframe
+
+### ```mutate```
+
+Para criar novas colunas no dataframe.
+```{r mutate}
+
+df_mutate <- df_virg %>% mutate(
+                          Teste = idade * 100
+                        )
+
+df_mutate
+```
+
+### Criando coluna diretamente
+```{r new_column}
+
+df_mutate$NovoTeste <- 0
+df_mutate
+```
+
+### Alterando coluna existente
+
+```{r modify}
+df_mutate$Teste <- "lalala"
+df_mutate
+```
+
+
+### Alterando coluna existente com filtro
+
+```{r modify_filter}
+df_mutate$Teste[df_mutate$genero == "feminino"] <- "lalala123"
+df_mutate
+```
+
+## Ordenar um dataframe
+
+### ```arrange```
+
+Ordenando em ordem crescente
+```{r arrange_asc}
+df_mutate %>% arrange(idade)
+```
+
+Ordenando em ordem decrescente
+```{r arrange_desc}
+df_mutate %>% arrange(-idade)
+```
+
+## Extrair dados descritivos (Agregação)
+
+
+### ```summarize```
+
+Usando apenas o summarize, os dados são reduzidos a uma única linha, então a média, mínimo e máximo são calculados considerando todos os registros.
+```{r summarize}
+df_mutate %>% summarize(
+                media = mean(idade),
+                max   = max(idade),
+                min   = min(idade)
+              )
+```
+
+### ```group_by```
+
+Já com o group_by o cálculo é feito de acordo com categorias específicas, então aqui vemos a média, mínimo e máximo de idade por gênero.
+```{r group_by}
+df_mutate %>% group_by(genero) %>% 
+              summarize(
+                media = mean(idade),
+                max   = max(idade),
+                min   = min(idade)
+              )
+```
+
+## Transformar uma coluna em vetor para efetuar cálculos
+
+### Primeira forma $
+
+Ao utilizar ```dataframe$coluna``` convertemos o resultado a um vetor.
+```{r vector_1}
+df_mutate$idade %>% sum
+```
+
+### Segunda forma []
+
+Ao utilizar colchetes duplos convertemos o resultado a um vetor.
+```{r vector_2}
+df_mutate[["idade"]] %>% sum
+```
+
+### Terceira forma ```pull```
+
+Com a função pull também temos como resultado um vetor.
+```{r vector_3}
+df_mutate %>% pull(idade) %>% sum
+```
+
+## Salvar um dataframe em um arquivo
+
+Ainda através da biblioteca ```readr```, da mesma forma que fizemos a leitura de um arquivo, podemos salvar um arquivo em csv.
+```{r write_csv}
+write_csv(df_mutate, "~/Documentos/exemplo.csv")
+```
+
