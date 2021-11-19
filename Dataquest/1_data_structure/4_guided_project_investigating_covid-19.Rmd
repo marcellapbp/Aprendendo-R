@@ -1,0 +1,145 @@
+---
+title: 'Guided Project: Investigating COVID-19 Virus Trends'
+author: "Marcella Pedro"
+date: "17/11/2021"
+#output: html_document
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Objetivo
+
+Neste projeto iremos avaliar dados divulgados no [Kaggle](https://www.kaggle.com/lin0li/covid19testing) e trabalhados pela Dataquest que podem ser acessados através [deste link](https://dq-content.s3.amazonaws.com/505/covid19.csv).
+São dados sobre o ínicio da pandemia de COVID-19 (COrona VIrus Disease), sendo assim o dataset possui dados coletados entre 20/01/2020 e 01/06/2020 e nosso objetivo é ao final desse projeto conseguir responder à seguinte questão:
+
+**Quais países tiveram os maiores números de casos positivos comparado ao número de testes realizados?**
+
+Bibliotecas importadas ao longo do projeto
+
+```{r libraries, message=FALSE}
+library(readr)  # para importação de arquivos csv
+library(glue)   # para prints inteligentes
+library(dplyr)  # manipulação e análise de dataframes
+```
+
+
+## Conhecendo os dados
+
+### Importar a base
+```{r load_dataset}
+covid_df <- read_csv("~/Documentos/covid19.csv")
+```
+
+### Tamanho da base
+
+Apesar de a própria função de importação trazer essa informação temos algumas alternativas:
+```{r dataset_size}
+tamanho <- dim(covid_df)
+glue("Tamanho da base: {tamanho[1]} linhas e {tamanho[2]} colunas")
+```
+ou
+
+```{r dataset_size2}
+linhas  <- nrow(covid_df)
+colunas <- ncol(covid_df)
+
+glue("Tamanho da base: {linhas} linhas e {colunas} colunas")
+```
+ou (melhor ainda)
+
+### ```glimpse```
+
+```{r dataset_size3}
+glimpse(covid_df)
+```
+
+Acima com a função ```glimpse``` foi possível em um único comando ver a quantidade de linhas, colunas, tipo de dados e exemplos dos dados de cada coluna.
+
+No caso de utilizar os primeiros métodos de verificação do tamanho da base, poderia ser combinado com as funções ```head``` ou ```tail``` que apenas traz exemplo dos dados, e o ```colnames``` ou somente ```names``` para identificar o nome das colunas.
+
+## Dicionário de dados
+
+Informação disponibilizada neste caso pelo Dataquest traduzida livremente, muito importante entender se de fato o nome das colunas tem um nome condizente com seu significado, ou tem um nome que pode levar à má interpretação.
+
+Esse material servirá de apoio para os demais passos do projeto.
+
+Campo                         | Significado   
+----------------------------: | :------------------------------------------------------------------
+ Date                         | Data da coleta
+ Continent_Name               | Nome do continente da ocorrência
+ Two_Letter_Country_Code      | Código do país da ocorrência
+ Province_State               | Informção do estado ou província específica, ou então consolidada "All States" 
+ positive                     | Casos positivos reportados acumulados
+ active                       | Casos ativos do dia
+ hospitalized                 | Número de hospitalizados reportados acumulados
+ hospitalizedCurr             | Número de hospitalizados reportados do dia
+ recovered                    | Número de recuperados reportados acumulados
+ death                        | Número de mortes reportadas acumuladas
+ total_tested                 | Número de testes realizados reportados acumulados
+ daily_tested                 | Número de testes realizados reportados no dia (se não houver dados é a média)
+ daily_positive               | Número de casos positivos reportados no dia (se não houver dados é a média)
+
+## Entendendo os dados a fundo
+
+### Filtrar dados a serem analisados
+
+Um dataset costuma ter muito mais informação do que precisamos para responder a pergunta que levou à análise. Nesse caso vamos focar apenas no nível dos países e deixar os detalhes de cada província/estado para um outro momento.
+
+**Filtrar dados a nível de país**
+```{r filter_all_states}
+covid_df_all_states <- covid_df %>% filter(Province_State == "All States") %>% 
+                                    select(-Province_State)
+glimpse(covid_df_all_states)
+```
+
+Já que filtramos um único valor do campo ```Province_State``` não precisamos desse campo para diferenciar os dados. Outro ponto é que de 10 mil registros aproximadamente agora vamos focar apenas e em torno de 3 mil deles.
+
+**Filtrar dados com informação diária**
+
+Não queremos confundir com os dados acumulados, então é uma boa ideia focar no que precisamos.
+
+```{r filter_daily}
+covid_df_all_states_daily <- covid_df_all_states %>% select(Date, Country_Region, 
+                                                            active, hospitalizedCurr, 
+                                                            daily_tested, daily_positive)
+glimpse(covid_df_all_states_daily)
+```
+
+### Agregar dados por país
+
+Uma vez que temos os dados necessários precisamos trabalha-los, realizar cálculos a fim de chegar no resultado que responde a pergunta inicial.
+
+Aqui a ideia é consolidar os dados de todo o período numa única linha por país e os valores serão somados e ordenados.
+```{r group_data}
+covid_df_all_states_daily_sum <- covid_df_all_states_daily %>%
+                                        group_by(Country_Region) %>%
+                                        summarize(
+                                                tested       = sum(daily_tested),
+                                                positive     = sum(daily_positive),
+                                                active       = sum(active),
+                                                hospitalized = sum(hospitalizedCurr)) %>% 
+                                        arrange(-tested)
+covid_df_all_states_daily_sum
+```
+
+Como queremos os maiores número podemos continuar a análise com os 10 maiores.
+```{r top10}
+covid_top_10 <- head(covid_df_all_states_daily_sum, n=10)
+covid_top_10
+```
+
+```{r ratio}
+covid_final <- covid_top_10 %>% mutate(ratio = positive/tested) %>% 
+                                arrange(-ratio)
+covid_final
+```
+
+**Por fim conseguimos responder à pergunta inicial, os 3 países que mais tiveram casos positivos em relação aos testes realizados são:**
+
+```{r result}
+head(covid_final[,c("Country_Region","ratio")], n=3)
+```
+
