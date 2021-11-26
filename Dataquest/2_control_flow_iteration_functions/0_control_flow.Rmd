@@ -1,0 +1,133 @@
+---
+title: "Control Flow"
+author: "Marcella Pedro"
+date: "25/11/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Controle de Fluxo (If... Else..)
+
+Nesse exercício vamos aprender como fazemos para tomar decisões através do código, direcionar quando um bloco de código deve ser executado, ou até mesmo determinar o valor da coluna de um dataset através de condições.
+
+## If else simples
+
+Utilizado em situações onde você precisa executar um bloco de código específico dependendo da situação.
+
+Precisamos apresentar uma condição ao if, que se resulte em verdadeiro (TRUE) vai executar o primeiro bloco, caso contrário o segundo bloco será executado.
+```{r if_else}
+graduacao <- "Engenharia"
+
+if (graduacao == "Química") { 
+  print("Graduado em Química")
+} else {
+  print("Não graduado em Química.")
+}
+```
+
+## If else no dataframe
+
+Importando um dataset de exemplo
+```{r message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+
+df <- read.csv("~/Documentos/exemplo.csv")
+
+df %>% head()
+```
+Vamos criar uma flag que indica se a pessoa é menor de idade.
+A função if_else simula o mesmo comportamento do if else acima, mas ao invés de executar um trecho de código diferente, atribui um valor diferente à nova coluna.
+
+```{r if_else_df}
+df <- df %>% mutate(
+                flg_menor = if_else(idade<18,"Menor de idade", "Maior de idade")
+                )
+df %>% head()
+```
+
+## If else com mais de uma condição
+
+Por vezes não temos apenas uma condição quando verdadeira executa um bloco e caso contrário outro bloco, pode ser que seja uma situação complexa que exija mais de duas soluções.
+
+```{r if_else_else_if}
+idade = 30
+
+if(idade < 18){
+  print("Menor de idade")
+}else if(idade >60){
+  print("Aposentado")
+}else{
+  print("Adulto")
+}
+```
+
+## If else com mais de uma condição simultânea
+
+Às vezes para que uma decisão seja tomada, duas condições precisam ser avaliadas em conjunto.
+
+```{r two_conditions}
+temperatura = 30
+
+if(temperatura >=18 && temperatura <=25){
+  print("Clima ideal")
+}else{
+  print("Poderia ser melhor :(")
+}
+```
+
+Agora utilizando a função if_else tem uma pegadinha, se usarmos os operadores && (and) e || (or) temos um resultado inesperado, traz apenas um resaultado quando esperamos um resultado para cada nota.
+É preciso usar apenas & e | para termos o resultado esperado.
+```{r trick}
+nota <- c(4,6,7,3,10)
+
+resultado_errado  <- if_else(nota >= 5 && nota <= 10, "Nota Azul", "Nota Vermelha")
+print(resultado_errado)
+
+resultado_correto <- if_else(nota >= 5 & nota <= 10, "Nota Azul", "Nota Vermelha")
+print(resultado_correto)
+```
+## Case_when
+
+Quando queremos mais de uma condição na onde normalmente usaríamos a função if_else, podemos então usar o case when.
+
+A condição final utiliza TRUE e se comporta como o else.
+```{r case_when}
+df <- df %>% mutate(
+                status = case_when(idade<18 ~ "Menor de idade",
+                                   idade>60 ~ "Aposentado",
+                                   TRUE ~ "Adulto")
+                )
+df %>% head()
+```
+
+## Dica Bônus: ```%in%```
+
+Quando temos muitas comparações, pode ser cansativo e repetitivo criar o código.
+```{r complicated_option}
+df %>% filter(profissao=="analista de dados" | 
+              profissao=="analista de sistemas" |
+              profissao=="analista contabil") %>% 
+       head
+```
+
+Uma forma mais simplificada de realizar a mesma comparação é utilizando o %in%
+
+```{r in}
+df %>% filter(profissao %in% c("analista de dados",
+                               "analista de sistemas",
+                               "analista contabil")) %>% 
+       head
+```
+
+Ou caso a ideia seja pegar tudo que seja diferente dessas opções, em outras palavras não seja essas opções (not in), basta adicionar o ponto de exclamação para inverter.
+```{r}
+df %>% filter(!profissao %in% c("analista de dados",
+                                "analista de sistemas",
+                                "analista contabil")) %>% 
+       head
+```
+
