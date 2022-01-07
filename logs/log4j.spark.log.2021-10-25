@@ -1,0 +1,149 @@
+21/10/25 22:10:28 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+21/10/25 22:10:29 INFO SecurityManager: Changing view acls to: marcella
+21/10/25 22:10:29 INFO SecurityManager: Changing modify acls to: marcella
+21/10/25 22:10:29 INFO SecurityManager: Changing view acls groups to: 
+21/10/25 22:10:29 INFO SecurityManager: Changing modify acls groups to: 
+21/10/25 22:10:29 INFO SecurityManager: SecurityManager: authentication disabled; ui acls disabled; users  with view permissions: Set(marcella); groups with view permissions: Set(); users  with modify permissions: Set(marcella); groups with modify permissions: Set()
+21/10/25 22:10:30 INFO HiveConf: Found configuration file file:/home/marcella/spark/spark-3.1.1-bin-hadoop3.2/conf/hive-site.xml
+21/10/25 22:10:31 INFO SparkContext: Running Spark version 3.1.1
+21/10/25 22:10:31 INFO ResourceUtils: ==============================================================
+21/10/25 22:10:31 INFO ResourceUtils: No custom resources configured for spark.driver.
+21/10/25 22:10:31 INFO ResourceUtils: ==============================================================
+21/10/25 22:10:31 INFO SparkContext: Submitted application: sparklyr
+21/10/25 22:10:31 INFO ResourceProfile: Default ResourceProfile created, executor resources: Map(cores -> name: cores, amount: 1, script: , vendor: , memory -> name: memory, amount: 1024, script: , vendor: , offHeap -> name: offHeap, amount: 0, script: , vendor: ), task resources: Map(cpus -> name: cpus, amount: 1.0)
+21/10/25 22:10:31 INFO ResourceProfile: Limiting resource is cpu
+21/10/25 22:10:31 INFO ResourceProfileManager: Added ResourceProfile id: 0
+21/10/25 22:10:31 INFO SecurityManager: Changing view acls to: marcella
+21/10/25 22:10:31 INFO SecurityManager: Changing modify acls to: marcella
+21/10/25 22:10:31 INFO SecurityManager: Changing view acls groups to: 
+21/10/25 22:10:31 INFO SecurityManager: Changing modify acls groups to: 
+21/10/25 22:10:31 INFO SecurityManager: SecurityManager: authentication disabled; ui acls disabled; users  with view permissions: Set(marcella); groups with view permissions: Set(); users  with modify permissions: Set(marcella); groups with modify permissions: Set()
+21/10/25 22:10:32 INFO Utils: Successfully started service 'sparkDriver' on port 32835.
+21/10/25 22:10:32 INFO SparkEnv: Registering MapOutputTracker
+21/10/25 22:10:32 INFO SparkEnv: Registering BlockManagerMaster
+21/10/25 22:10:32 INFO BlockManagerMasterEndpoint: Using org.apache.spark.storage.DefaultTopologyMapper for getting topology information
+21/10/25 22:10:32 INFO BlockManagerMasterEndpoint: BlockManagerMasterEndpoint up
+21/10/25 22:10:32 INFO SparkEnv: Registering BlockManagerMasterHeartbeat
+21/10/25 22:10:32 INFO DiskBlockManager: Created local directory at /tmp/blockmgr-188c5237-37b9-479c-8c63-b062110c009c
+21/10/25 22:10:32 INFO MemoryStore: MemoryStore started with capacity 1048.8 MiB
+21/10/25 22:10:32 INFO SparkEnv: Registering OutputCommitCoordinator
+21/10/25 22:10:33 INFO Utils: Successfully started service 'SparkUI' on port 4040.
+21/10/25 22:10:33 INFO SparkUI: Bound SparkUI to 127.0.0.1, and started at http://localhost:4040
+21/10/25 22:10:33 INFO SparkContext: Added JAR file:/home/marcella/R/x86_64-pc-linux-gnu-library/4.1/sparklyr/java/sparklyr-master-2.12.jar at spark://localhost:32835/jars/sparklyr-master-2.12.jar with timestamp 1635210631434
+21/10/25 22:10:33 INFO Executor: Starting executor ID driver on host localhost
+21/10/25 22:10:33 INFO Executor: Fetching spark://localhost:32835/jars/sparklyr-master-2.12.jar with timestamp 1635210631434
+21/10/25 22:10:33 INFO TransportClientFactory: Successfully created connection to localhost/127.0.0.1:32835 after 33 ms (0 ms spent in bootstraps)
+21/10/25 22:10:34 INFO Utils: Fetching spark://localhost:32835/jars/sparklyr-master-2.12.jar to /tmp/spark-18983688-9b0b-4ac1-bfa3-ad22942856ab/userFiles-4ee2fae9-6231-4464-a4fd-d62c104208f3/fetchFileTemp8981031985703580596.tmp
+21/10/25 22:10:34 INFO Executor: Adding file:/tmp/spark-18983688-9b0b-4ac1-bfa3-ad22942856ab/userFiles-4ee2fae9-6231-4464-a4fd-d62c104208f3/sparklyr-master-2.12.jar to class loader
+21/10/25 22:10:34 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 38323.
+21/10/25 22:10:34 INFO NettyBlockTransferService: Server created on localhost:38323
+21/10/25 22:10:34 INFO BlockManager: Using org.apache.spark.storage.RandomBlockReplicationPolicy for block replication policy
+21/10/25 22:10:34 INFO BlockManagerMaster: Registering BlockManager BlockManagerId(driver, localhost, 38323, None)
+21/10/25 22:10:34 INFO BlockManagerMasterEndpoint: Registering block manager localhost:38323 with 1048.8 MiB RAM, BlockManagerId(driver, localhost, 38323, None)
+21/10/25 22:10:34 INFO BlockManagerMaster: Registered BlockManager BlockManagerId(driver, localhost, 38323, None)
+21/10/25 22:10:34 INFO BlockManager: Initialized BlockManager: BlockManagerId(driver, localhost, 38323, None)
+21/10/25 22:10:35 INFO SharedState: Setting hive.metastore.warehouse.dir ('null') to the value of spark.sql.warehouse.dir ('file:/home/marcella/Documentos/Dataquest/Aprendendo-R/spark-warehouse').
+21/10/25 22:10:35 INFO SharedState: Warehouse path is 'file:/home/marcella/Documentos/Dataquest/Aprendendo-R/spark-warehouse'.
+21/10/25 22:10:42 INFO HiveUtils: Initializing HiveMetastoreConnection version 2.3.7 using Spark classes.
+21/10/25 22:10:43 INFO SessionState: Created HDFS directory: /tmp/hive/marcella
+21/10/25 22:10:43 INFO SessionState: Created local directory: /tmp/marcella
+21/10/25 22:10:43 INFO SessionState: Created HDFS directory: /tmp/hive/marcella/ef98ca75-c562-4f3f-8490-fb5d5492d587
+21/10/25 22:10:43 INFO SessionState: Created local directory: /tmp/marcella/ef98ca75-c562-4f3f-8490-fb5d5492d587
+21/10/25 22:10:43 INFO SessionState: Created HDFS directory: /tmp/hive/marcella/ef98ca75-c562-4f3f-8490-fb5d5492d587/_tmp_space.db
+21/10/25 22:10:43 INFO HiveClientImpl: Warehouse location for Hive client (version 2.3.7) is file:/home/marcella/Documentos/Dataquest/Aprendendo-R/spark-warehouse
+21/10/25 22:10:44 WARN HiveConf: HiveConf of name hive.stats.jdbc.timeout does not exist
+21/10/25 22:10:44 WARN HiveConf: HiveConf of name hive.stats.retries.wait does not exist
+21/10/25 22:10:44 INFO HiveMetaStore: 0: Opening raw store with implementation class:org.apache.hadoop.hive.metastore.ObjectStore
+21/10/25 22:10:44 INFO ObjectStore: ObjectStore, initialize called
+21/10/25 22:10:45 INFO Persistence: Property hive.metastore.integral.jdo.pushdown unknown - will be ignored
+21/10/25 22:10:45 INFO Persistence: Property datanucleus.cache.level2 unknown - will be ignored
+21/10/25 22:10:48 INFO ObjectStore: Setting MetaStore object pin classes with hive.metastore.cache.pinobjtypes="Table,StorageDescriptor,SerDeInfo,Partition,Database,Type,FieldSchema,Order"
+21/10/25 22:10:52 INFO MetaStoreDirectSql: Using direct SQL, underlying DB is DERBY
+21/10/25 22:10:52 INFO ObjectStore: Initialized ObjectStore
+21/10/25 22:10:52 WARN ObjectStore: Version information not found in metastore. hive.metastore.schema.verification is not enabled so recording the schema version 2.3.0
+21/10/25 22:10:52 WARN ObjectStore: setMetaStoreSchemaVersion called but recording version is disabled: version = 2.3.0, comment = Set by MetaStore marcella@127.0.1.1
+21/10/25 22:10:52 WARN ObjectStore: Failed to get database default, returning NoSuchObjectException
+21/10/25 22:10:53 INFO HiveMetaStore: Added admin role in metastore
+21/10/25 22:10:53 INFO HiveMetaStore: Added public role in metastore
+21/10/25 22:10:53 INFO HiveMetaStore: No user is added in admin role, since config is empty
+21/10/25 22:10:53 INFO HiveMetaStore: 0: get_all_functions
+21/10/25 22:10:53 INFO audit: ugi=marcella	ip=unknown-ip-addr	cmd=get_all_functions	
+21/10/25 22:10:53 INFO HiveMetaStore: 0: get_database: default
+21/10/25 22:10:53 INFO audit: ugi=marcella	ip=unknown-ip-addr	cmd=get_database: default	
+21/10/25 22:10:53 INFO HiveMetaStore: 0: get_database: global_temp
+21/10/25 22:10:53 INFO audit: ugi=marcella	ip=unknown-ip-addr	cmd=get_database: global_temp	
+21/10/25 22:10:53 WARN ObjectStore: Failed to get database global_temp, returning NoSuchObjectException
+21/10/25 22:10:53 INFO HiveMetaStore: 0: get_database: default
+21/10/25 22:10:53 INFO audit: ugi=marcella	ip=unknown-ip-addr	cmd=get_database: default	
+21/10/25 22:10:53 INFO HiveMetaStore: 0: get_database: default
+21/10/25 22:10:53 INFO audit: ugi=marcella	ip=unknown-ip-addr	cmd=get_database: default	
+21/10/25 22:10:53 INFO HiveMetaStore: 0: get_tables: db=default pat=*
+21/10/25 22:10:53 INFO audit: ugi=marcella	ip=unknown-ip-addr	cmd=get_tables: db=default pat=*	
+21/10/25 22:10:56 INFO CodeGenerator: Code generated in 412.918416 ms
+21/10/25 22:10:56 INFO CodeGenerator: Code generated in 39.818284 ms
+21/10/25 22:10:57 INFO SparkContext: Starting job: count at utils.scala:24
+21/10/25 22:10:57 INFO DAGScheduler: Registering RDD 2 (count at utils.scala:24) as input to shuffle 0
+21/10/25 22:10:57 INFO DAGScheduler: Got job 0 (count at utils.scala:24) with 1 output partitions
+21/10/25 22:10:57 INFO DAGScheduler: Final stage: ResultStage 1 (count at utils.scala:24)
+21/10/25 22:10:57 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 0)
+21/10/25 22:10:57 INFO DAGScheduler: Missing parents: List()
+21/10/25 22:10:57 INFO DAGScheduler: Submitting ResultStage 1 (MapPartitionsRDD[5] at count at utils.scala:24), which has no missing parents
+21/10/25 22:10:57 INFO MemoryStore: Block broadcast_0 stored as values in memory (estimated size 10.1 KiB, free 1048.8 MiB)
+21/10/25 22:10:57 INFO MemoryStore: Block broadcast_0_piece0 stored as bytes in memory (estimated size 5.0 KiB, free 1048.8 MiB)
+21/10/25 22:10:57 INFO BlockManagerInfo: Added broadcast_0_piece0 in memory on localhost:38323 (size: 5.0 KiB, free: 1048.8 MiB)
+21/10/25 22:10:57 INFO SparkContext: Created broadcast 0 from broadcast at DAGScheduler.scala:1383
+21/10/25 22:10:57 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 1 (MapPartitionsRDD[5] at count at utils.scala:24) (first 15 tasks are for partitions Vector(0))
+21/10/25 22:10:57 INFO TaskSchedulerImpl: Adding task set 1.0 with 1 tasks resource profile 0
+21/10/25 22:10:57 INFO TaskSetManager: Starting task 0.0 in stage 1.0 (TID 0) (localhost, executor driver, partition 0, PROCESS_LOCAL, 4453 bytes) taskResourceAssignments Map()
+21/10/25 22:10:57 INFO Executor: Running task 0.0 in stage 1.0 (TID 0)
+21/10/25 22:10:57 INFO ShuffleBlockFetcherIterator: Getting 0 (0.0 B) non-empty blocks including 0 (0.0 B) local and 0 (0.0 B) host-local and 0 (0.0 B) remote blocks
+21/10/25 22:10:57 INFO ShuffleBlockFetcherIterator: Started 0 remote fetches in 13 ms
+21/10/25 22:10:57 INFO Executor: Finished task 0.0 in stage 1.0 (TID 0). 2684 bytes result sent to driver
+21/10/25 22:10:57 INFO TaskSetManager: Finished task 0.0 in stage 1.0 (TID 0) in 425 ms on localhost (executor driver) (1/1)
+21/10/25 22:10:57 INFO TaskSchedulerImpl: Removed TaskSet 1.0, whose tasks have all completed, from pool 
+21/10/25 22:10:58 INFO DAGScheduler: ResultStage 1 (count at utils.scala:24) finished in 0,839 s
+21/10/25 22:10:58 INFO DAGScheduler: Job 0 is finished. Cancelling potential speculative or zombie tasks for this job
+21/10/25 22:10:58 INFO TaskSchedulerImpl: Killing all running tasks in stage 1: Stage finished
+21/10/25 22:10:58 INFO DAGScheduler: Job 0 finished: count at utils.scala:24, took 0,959346 s
+21/10/25 22:10:58 INFO HiveMetaStore: 0: get_database: default
+21/10/25 22:10:58 INFO audit: ugi=marcella	ip=unknown-ip-addr	cmd=get_database: default	
+21/10/25 22:10:58 INFO HiveMetaStore: 0: get_database: default
+21/10/25 22:10:58 INFO audit: ugi=marcella	ip=unknown-ip-addr	cmd=get_database: default	
+21/10/25 22:10:58 INFO HiveMetaStore: 0: get_tables: db=default pat=*
+21/10/25 22:10:58 INFO audit: ugi=marcella	ip=unknown-ip-addr	cmd=get_tables: db=default pat=*	
+21/10/25 22:10:58 INFO SparkContext: Starting job: count at utils.scala:24
+21/10/25 22:10:58 INFO DAGScheduler: Registering RDD 8 (count at utils.scala:24) as input to shuffle 1
+21/10/25 22:10:58 INFO DAGScheduler: Got job 1 (count at utils.scala:24) with 1 output partitions
+21/10/25 22:10:58 INFO DAGScheduler: Final stage: ResultStage 3 (count at utils.scala:24)
+21/10/25 22:10:58 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 2)
+21/10/25 22:10:58 INFO DAGScheduler: Missing parents: List()
+21/10/25 22:10:58 INFO DAGScheduler: Submitting ResultStage 3 (MapPartitionsRDD[11] at count at utils.scala:24), which has no missing parents
+21/10/25 22:10:58 INFO BlockManagerInfo: Removed broadcast_0_piece0 on localhost:38323 in memory (size: 5.0 KiB, free: 1048.8 MiB)
+21/10/25 22:10:58 INFO MemoryStore: Block broadcast_1 stored as values in memory (estimated size 10.1 KiB, free 1048.8 MiB)
+21/10/25 22:10:58 INFO MemoryStore: Block broadcast_1_piece0 stored as bytes in memory (estimated size 5.0 KiB, free 1048.8 MiB)
+21/10/25 22:10:58 INFO BlockManagerInfo: Added broadcast_1_piece0 in memory on localhost:38323 (size: 5.0 KiB, free: 1048.8 MiB)
+21/10/25 22:10:58 INFO SparkContext: Created broadcast 1 from broadcast at DAGScheduler.scala:1383
+21/10/25 22:10:58 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 3 (MapPartitionsRDD[11] at count at utils.scala:24) (first 15 tasks are for partitions Vector(0))
+21/10/25 22:10:58 INFO TaskSchedulerImpl: Adding task set 3.0 with 1 tasks resource profile 0
+21/10/25 22:10:58 INFO TaskSetManager: Starting task 0.0 in stage 3.0 (TID 1) (localhost, executor driver, partition 0, PROCESS_LOCAL, 4453 bytes) taskResourceAssignments Map()
+21/10/25 22:10:58 INFO Executor: Running task 0.0 in stage 3.0 (TID 1)
+21/10/25 22:10:59 INFO ShuffleBlockFetcherIterator: Getting 0 (0.0 B) non-empty blocks including 0 (0.0 B) local and 0 (0.0 B) host-local and 0 (0.0 B) remote blocks
+21/10/25 22:10:59 INFO ShuffleBlockFetcherIterator: Started 0 remote fetches in 1 ms
+21/10/25 22:10:59 INFO Executor: Finished task 0.0 in stage 3.0 (TID 1). 2641 bytes result sent to driver
+21/10/25 22:10:59 INFO TaskSetManager: Finished task 0.0 in stage 3.0 (TID 1) in 29 ms on localhost (executor driver) (1/1)
+21/10/25 22:10:59 INFO TaskSchedulerImpl: Removed TaskSet 3.0, whose tasks have all completed, from pool 
+21/10/25 22:10:59 INFO DAGScheduler: ResultStage 3 (count at utils.scala:24) finished in 0,070 s
+21/10/25 22:10:59 INFO DAGScheduler: Job 1 is finished. Cancelling potential speculative or zombie tasks for this job
+21/10/25 22:10:59 INFO TaskSchedulerImpl: Killing all running tasks in stage 3: Stage finished
+21/10/25 22:10:59 INFO DAGScheduler: Job 1 finished: count at utils.scala:24, took 0,084639 s
+21/10/25 22:11:08 INFO SparkContext: Invoking stop() from shutdown hook
+21/10/25 22:11:09 INFO SparkUI: Stopped Spark web UI at http://localhost:4040
+21/10/25 22:11:09 INFO MapOutputTrackerMasterEndpoint: MapOutputTrackerMasterEndpoint stopped!
+21/10/25 22:11:09 INFO MemoryStore: MemoryStore cleared
+21/10/25 22:11:09 INFO BlockManager: BlockManager stopped
+21/10/25 22:11:09 INFO BlockManagerMaster: BlockManagerMaster stopped
+21/10/25 22:11:09 INFO OutputCommitCoordinator$OutputCommitCoordinatorEndpoint: OutputCommitCoordinator stopped!
+21/10/25 22:11:09 INFO SparkContext: Successfully stopped SparkContext
+21/10/25 22:11:09 INFO ShutdownHookManager: Shutdown hook called
+21/10/25 22:11:09 INFO ShutdownHookManager: Deleting directory /tmp/spark-c71d3bbf-ac6b-444f-b87a-29971e6d1ed0
+21/10/25 22:11:09 INFO ShutdownHookManager: Deleting directory /tmp/spark-18983688-9b0b-4ac1-bfa3-ad22942856ab
