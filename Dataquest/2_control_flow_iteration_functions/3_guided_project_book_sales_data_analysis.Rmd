@@ -1,0 +1,216 @@
+---
+title: "Guided Project: Creating An Efficient Data Analysis Workflow"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Vamos analisar uma base de dados de venda de livros de programação que obtiveram reviews com objetivo de extrair insights desses dados. A ideia é demonstrar de forma simples e objetiva o passo a passo do processo de análise de dados, desde a coleta, limpeza, transformação até o resultado obtido após análises.
+
+A base de dados pode ser obtida pela plataforma data.world [(clique aqui)](https://data.world/dataquest/book-reviews).
+
+## Bibliotecas Utilizadas
+```{r message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+```
+
+## Coleta da Base
+
+Com o código abaixo constatamos que a base possui 2 mil registros e 4 colunas, sendo uma delas do tipo double e as demais character. É possível já de cara notar que temos valores nulos, e informações iguais descritas de maneiras distintas.
+
+```{r}
+base <- read_csv("https://query.data.world/s/wmu3zbxkfwmq7wejwmwyj4qacawznu")
+
+glimpse(base)
+```
+
+Campo                         | Significado   
+----------------------------: | :------------------------------------------------------------------
+ book                         | Título do Livro
+ review                       | Avaliação do comprador
+ state                        | Estado onde o comprador mora
+ price                        | Preço que o comprador pagou pelo livro
+
+
+Acima fizemos o uso de bibliotecas para facilitar a investigação da base.
+Mas existe uma forma alternativa de ver as mesmas informações.
+
+Tamanho da base:
+```{r}
+dim(base)
+```
+
+
+Colunas e seu tipo de dado
+```{r}
+for (column in colnames(base)){
+  print( paste(column, class(base[[column]]) ) )
+}
+```
+
+ou
+
+```{r}
+for (column in colnames(base)){
+  print( paste(column, typeof(base[[column]]) ) )
+}
+```
+
+## Investigando dados
+
+Entendendo valores únicos presentes na base
+
+```{r}
+base$book %>% unique()
+base$review %>% unique()
+base$state %>% unique()
+base$price %>% unique()
+```
+
+Uma alternativa para a coluna numérica (pensando que em geral a variação de valores pode ser bem maior que dados categóricos)
+
+```{r}
+base$price %>% min()
+base$price %>% max()
+base$price %>% mean()
+base$price %>% summary()
+```
+
+Também é interessante entender a distribuição da base, quantos dos livros possuem qual valor em termos absolutos e relativos.
+
+Com o resultado abaixo podemos ver que os valores são bem distribuídos, para os 5 preços existentes na base, cada um deles possuem cerca de 20% de livros, em outras palavras não existe uma grande concentração em algum valor específico.
+```{r}
+base$price %>% table()
+base$price %>% table() %>% prop.table()
+```
+
+Os títulos presentes na base também têm uma distribuição uniforme.
+```{r}
+base$book %>% table() %>% prop.table()
+```
+
+Já para o estado não conseguimos analisar bem o resultado visto que temos valores distintos, mas que representam a mesma informação.
+```{r}
+base$state %>% table() %>% prop.table()
+```
+
+E para as avaliações temos a presença de dados nulos que precisamos decidir entre remover os dados ou imputar utilizando algum método estatísco como por exemplo a média.
+```{r}
+base$review %>% is.na() %>% sum()
+```
+
+## Limpeza dos dados
+
+
+### Resolvendo nulos: Eliminação ou Imputação
+Vamos começar avaliando quais colunas possuem dados nulos e qual o volume.
+
+```{r}
+for(column in colnames(base)){
+  nulos <- base[[column]] %>% is.na() %>% sum()
+  print(paste(column,", nulos: ", nulos))
+  
+}
+```
+
+Com o resultado acima notamos que apenas a coluna de reviews possui dados nulos e o volume é de 206 nulos em torno de 10% da base. Sendo assim vamos optar pelo método de remoção dos nulos, ou melhor vamos criar um novo objeto sem nulos.
+
+```{r}
+base_clean <- base %>% filter(!is.na(review))
+
+glimpse(base_clean)
+```
+
+### Padronizando informações
+Agora vamos criar novos campos que tenha o estado do comprador de forma padronizada.
+
+```{r}
+base_clean <- base_clean %>% 
+   mutate(state_code = case_when(state == "California" ~ "CA",
+                                 state == "Florida"    ~ "FL",
+                                 state == "New York"   ~ "NY",
+                                 state == "Texas"      ~ "TX",
+                                 TRUE                  ~ state),
+          state_desc = case_when(state == "CA" ~ "California",
+                                 state == "FL" ~ "Florida",
+                                 state == "NY" ~ "New York",
+                                 state == "TX" ~ "Texas",
+                                 TRUE          ~ state))
+```
+
+Após criado as colunas de código e descrição separadas, é interessante cruzar com a coluna original para conferir se o resultado está correto.
+```{r}
+base_clean %>% select(state,state_code) %>% table()
+base_clean %>% select(state,state_desc) %>% table()
+```
+
+Por fim podemos novamente olhar para a distribuição dos estados e notamos que a maior compra de livros ocorreu em New York enquanto que a Florida teve o menor índice.
+```{r}
+base_clean$state_code %>% table() %>% prop.table()
+```
+
+### Convertendo dados
+
+O review dos usuários está de forma descritiva e pode causar dúvidas e ser mais difícil de trabalhar, então vamos converter em uma nota numérica.
+Também vamos criar uma flag para determinar se o título está dentre aqueles com melhor avaliação.
+
+```{r}
+base_clean <- base_clean %>% 
+  mutate(review_num = case_when(review == "Poor"      ~ 1,
+                                review == "Fair"      ~ 2,
+                                review == "Good"      ~ 3,
+                                review == "Great"     ~ 4,
+                                review == "Excellent" ~ 5))
+base_clean <- base_clean %>% 
+  mutate(is_high_review = ifelse(review_num >= 4, TRUE, FALSE))
+
+base_clean %>% select(review, review_num, is_high_review) %>% head()
+```
+
+## Analisando dados tranformados
+
+O objetivo ao analisar os dados, é conseguir de alguma forma uma melhoria, ideias, informações que permitirão obter resultados positivos. Como estamos falando de review de livros, é interessante justamente saber quais são os livros melhor avaliados, quais são os mais lucráveis? 
+
+O exercício aqui nos permitiu escolher uma métrica, num projeto real pode ser que essa métrica seja determinada pelo cliente, ou é possível que seja necessário nós mesmos determinar.
+
+Aqui escolhemos mais lucrável os livros que tem **melhor avaliação, menor custo e maior número de vendas**.
+
+Foi decidido dessa forma, pois um livro que vende fácil, custa pouco e é bem avaliado é uma boa aposta para melhorar o lucro sem muito esforço.
+
+Abaixo então:
+
+* agrupamos o resultado por título,
+* calculamos a quantidade de vendas de cada título,
+* calculamos o percentual vendas com review com nota alta,
+* calculamos o preço médio de cada título,
+* calculamos o custo total das vendas de cada título,
+* ordenamos o custo total de forma ascendente.
+
+E descobrimos que:
+
+* o total de vendas foi parecido em todos títulos, em torno de 360 vendas,
+* praticamente todos os livros apresentaram em torno de 40% de ótimas avaliações,
+* no entanto o custo total varia bastante devido ao preço dos títulos.
+
+Por fim tanto o título *R For Dummies* quanto o *R Made Easy* parecem ser os mais lucrativos visto que um é o menos custoso, e o outro apesar de ser o segundo menos custoso é 4 pontos percentuais mais bem avaliado.
+
+```{r}
+base_clean %>% 
+  group_by(book) %>% 
+  summarise(Total_Vendas      = n(),
+            Perc_Bem_Avaliado = sum(is_high_review)/n(),
+            Preco_Medio       = mean(price),
+            Custo_Total       = mean(price)*n()) %>% 
+  arrange(Custo_Total) 
+```
+
+
