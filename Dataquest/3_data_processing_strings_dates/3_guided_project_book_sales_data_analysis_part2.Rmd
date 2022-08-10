@@ -1,0 +1,256 @@
+---
+title: "Guided Project: Creating An Efficient Data Analysis Workflow, Part 2"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Vamos analisar uma base de dados de venda de livros de programação que obtiveram reviews com objetivo de extrair insights desses dados. A ideia é demonstrar de forma simples e objetiva o passo a passo do processo de análise de dados, desde a coleta, limpeza, transformação até o resultado obtido após análises. No entanto, nessa parte 2 com algumas técnicas mais avançadas.
+
+A base de dados pode ser obtida pela plataforma data.world [(clique aqui)](https://data.world/dataquest/book-sales-data).
+
+## Bibliotecas Utilizadas
+```{r message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(purrr)
+library(lubridate)
+library(janitor)
+library(glue)
+library(stringr)
+```
+
+## Coleta da Base
+
+Com o código abaixo constatamos que a base possui 5 mil registros e 5 colunas, sendo uma delas do tipo double e as demais character. É possível já de cara notar que temos valores nulos e também uma coluna de data para ser manipulada.
+
+```{r}
+base <- read_csv("https://query.data.world/s/7f4ah2qv53p4if4dass7cj4qyhkr3x")
+
+glimpse(base)
+```
+
+Campo                         | Significado   
+----------------------------: | :------------------------------------------------------------------
+ date                         | Data da compra
+ user_submitted_review        | Avaliação do comprador
+ title                        | Título do Livro
+ total_purchased              | Quantidade de livros comprados
+ customer_type                | Tipo de consumidor
+
+
+## Investigando dados
+
+Entendendo valores únicos presentes na base apenas nas variáveis categóricas.
+
+Para evitar o uso repetitivo da função table, imaginando situações onde o dataset tem muitas colunas, podemos utilizar a função map, assim num único comando replicamos o efeito para várias colunas além de ser uma função vetorizada e portanto mais eficiente.
+
+Com o adorn_totals é possível calcular o total da tabela de maneira facilitada.
+
+Com esse código é possível perceber que:
+
+  * os reviews tem uma distribuição bem parecida
+  * já sobre os livros, o R Made Easy foi um dos menos procurados, enquando os mais procurados foi Fundamentals of R for Beginners e R for Dummies
+  * boa parte das compras foram empresas, ou com foco em negócios
+  
+```{r}
+tabelas <- map(base %>% select(user_submitted_review,
+                    title,
+                    customer_type),
+    table, 
+    useNA = "ifany") # esse parâmetro a função map vai repassar a função table
+                     # assim é possível calcular a qtde de nulos quando existir
+
+
+indices <- 1:length(tabelas)
+
+for(i in indices){
+  result <- tabelas[[i]] %>% 
+                as.data.frame() %>% 
+                adorn_totals() # calcula total da tabela
+  
+  # trocando nome da coluna pelo nome da variável em análise
+  names(result)[1] <- names(tabelas)[[i]] 
+  
+  result %>%  
+    print()
+}
+```
+
+Para o campo de data, podemos fazer uso da biblioteca lubridate para facilitar nossa análise.
+Com ela foi possível facilmente conveter o formado mm/dd/yyyy para yyyy-mm-dd.
+Com o uso do substr, selecionamos apenas o ano e mês para agrupar e ter uma ideia da distribuição da base.
+Vemos que a base possui registros no período de 2019, de janeiro a dezembro.
+
+```{r}
+base <- base %>% mutate(date = mdy(date))
+
+base %>% 
+  mutate(safra = substr(date,1,7)) %>% 
+  group_by(safra) %>% 
+  summarise(Qtd = n()) %>% 
+  mutate(Perc = Qtd/sum(Qtd)) %>% 
+  adorn_totals()
+```
+
+
+Uma alternativa para a coluna numérica (pensando que em geral a variação de valores pode ser bem maior que dados categóricos) é encontrar os pontos de cortes que dividem a base em partes iguais.
+Por exemplo aqui escolhemos dividir a base em 5 partes, cada parte vai acumular 20% dos registros.
+Sendo assim o resultado armazenado na variável quantil é o valor que se dividirmos a base vai permitir essa separação em 20%.
+
+A função cut vai utilizar esses pontos de corte para de fato cortar a informação e criar intervalos, assim essa nova informação pode ser agrupada como uma variável categórica, visto que a informação foi reduzida de um valor bruto a intervalos.
+```{r}
+quantil <- quantile(base %>% select(total_purchased) %>% 
+                             filter(!is.na(total_purchased)) %>% 
+                             pull(), probs = seq(0,1,0.2))
+quantil
+
+base %>% 
+  mutate(total_purchased_cut = cut(total_purchased,
+                                   quantil)) %>% 
+  group_by(total_purchased_cut) %>% 
+  summarise(Qtd = n()) %>% 
+  mutate(Perc = Qtd/sum(Qtd)) %>% 
+  adorn_totals()
+```
+## Limpeza de nulos
+
+E para as avaliações temos a presença de dados nulos que precisamos decidir entre remover os dados ou imputar utilizando algum método estatísco como por exemplo a média.
+```{r}
+
+for(column in colnames(base)){
+  is_na <- base[[column]] %>% is.na() %>% 
+                              sum()
+  if(is_na > 0){
+    glue("base${column}: {is_na} nulos") %>% print()
+  }
+}
+```
+
+Com o resultado acima notamos que temos nulos nos reviews e no total de livros comprados.
+
+Para a coluna de review com nulos, a abordagem de remoção aqui é o ideal visto que o review é um dos principais pontos para estudo se a campanha de venda foi efetiva.
+
+```{r}
+base_clean <- base %>% filter(!is.na(user_submitted_review))
+
+glimpse(base_clean)
+```
+Já para o total de vendas, uma melhor abordagem é utilizar a imputação de um valor estatístico, nesse caso a média, pois não vai distorcer tanto o resultado e não vamos desperdiçar os reviews.
+
+```{r}
+#selecionando um exemplo para conferir o resultado
+base_clean %>% filter(user_submitted_review == "Hated it",
+                      title == "R For Dummies",
+                      date == "2019-05-09") %>% head()
+
+#imputando media
+base_clean <- base_clean %>% 
+  mutate(total_purchased = ifelse(is.na(total_purchased), 
+                                  mean(total_purchased, na.rm = TRUE) %>% 
+                                    round(),
+                                  total_purchased))
+
+#resultado
+base_clean %>% filter(user_submitted_review == "Hated it",
+                      title == "R For Dummies",
+                      date == "2019-05-09") %>% head()
+
+```
+
+
+## Padronizando informações
+
+Agora vamos criar um novo campo que tenha de forma simplificada se o review foi positivo ou negativo.
+Assim conseguiremos avaliar se houve evolução na campanha.
+
+```{r}
+
+base_clean <- base_clean %>% 
+  mutate(
+    is_positive =  case_when(str_detect(user_submitted_review, "lot")     ~ TRUE,
+                             str_detect(user_submitted_review, "Awesome") ~ TRUE,
+                             str_detect(user_submitted_review, "okay")    ~ TRUE,
+                             str_detect(user_submitted_review, "Never")   ~ TRUE,
+                             str_detect(user_submitted_review, "OK")      ~ TRUE,
+                             TRUE ~ FALSE)
+
+    )
+base_clean %>% select(user_submitted_review,is_positive) %>% head()
+```
+
+Após criado as colunas de código e descrição separadas, é interessante cruzar com a coluna original para conferir se o resultado está correto.
+```{r}
+base_clean %>% select(user_submitted_review,is_positive) %>% table()
+```
+Outro campo que podemos criar é uma identificação se o período da compra foi antes ou depois da campanha de vendas ter sido criada.
+```{r}
+
+base_clean <- base_clean %>% 
+  mutate(
+    sale_campaign_period =  ifelse(ymd(date) < "2019-07-01", "Antes", "Depois")
+    )
+
+base_clean %>% select(date, sale_campaign_period) %>% head()
+
+```
+
+## Análise da base
+
+Agora podemos agrupar as novas colunas e entender se a campanha de venda causou efeito nas compras e reviews.
+Pelo resultado conseguimos ver que não houve mudanças significativas tanto no volume quanto na percepção positiva dos clientes, apenas um pequeno aumento em vendas com reviews positivos. Então com essa análise uma conclusão que podemos tirar é que a campanha não foi o suficiente para melhorar as vendas.
+
+```{r}
+base_clean %>% 
+  group_by(sale_campaign_period) %>% 
+  summarise(Qtd = n(),
+            Venda_Positiva = sum(is_positive),
+            Taxa_aceitacao = Venda_Positiva/Qtd)
+```
+Por outro lado olhamos apenas o resultado geral das vendas e temos títulos diferentes misturados nessa análise.
+Vamos tentar olhar mais a fundo de outros pontos de vista.
+
+Olhando pelo tipo de consumidor o aumento ainda não é muito significativo
+```{r}
+base_clean %>% 
+  group_by(customer_type,sale_campaign_period) %>% 
+  summarise(Qtd = n(),
+            Venda_Positiva = sum(is_positive),
+            Taxa_aceitacao = Venda_Positiva/Qtd)
+```
+
+Por livro, há um aumento de vendas em alguns casos, melhores reviews, mas novamente não é um número significativo.
+O livro R Made Easy acaba tendo uma distorção nos percentuais devido ao volume muito baixo de livros vendidos.
+```{r}
+base_clean %>% 
+  group_by(title,sale_campaign_period) %>% 
+  summarise(Qtd = n(),
+            Venda_Positiva = sum(is_positive),
+            Taxa_aceitacao = Venda_Positiva/Qtd)
+```
+
+Uma última visualização é ver se houve alguma evolução ao longo do tempo que com as visualizções anteriores não foi possivel enxergar.
+Mas pelo resultado, não parece ter uma manifestação maior de vendas ou de reviews positivos evoluindo de acordo com os meses. Na verdade no mês anterior ao lançamento da campanha foi o mês com mais reviews positivos.
+
+```{r}
+base_clean %>% 
+  mutate(safra = substr(date,1,7)) %>% 
+  group_by(safra) %>% 
+  summarise(Qtd = n(),
+            Venda_Positiva = sum(is_positive),
+            Taxa_aceitacao = Venda_Positiva/Qtd)
+```
+
+
+## Conclusão
+
+Aqui as análises mostram que a campanha não demonstrou ter influenciado nas vendas.
+Claro que é um exemplo simples, na vida real, vários motivos podem influenciar, como sazonalidade nas vendas, falta de informações para chegar a uma conclusão, dados incorretos e etc.
