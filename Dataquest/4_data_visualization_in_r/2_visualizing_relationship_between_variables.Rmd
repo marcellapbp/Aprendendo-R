@@ -1,0 +1,136 @@
+---
+title: "Visualizing Relationship Between Variables"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Visualizando múltiplas informações num único gráfico
+
+Com o objetivo de explorar a relação entre as informações, vamos novamente utilizar a base do National Center for Health Statistics sobre tendências de mortalidade nos Estados Unidos ao longo dos anos que pode ser encontrada [clicando aqui](https://data.cdc.gov/NCHS/NCHS-Death-rates-and-life-expectancy-at-birth/w9j2-ggv5).
+
+
+Bibliotecas
+```{r message=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+
+Importando o dataset
+
+```{r}
+base <- 
+  read.csv("https://data.cdc.gov/api/views/w9j2-ggv5/rows.csv?accessType=DOWNLOAD")
+
+glimpse(base)
+```
+
+Campo                                | Significado   
+-----------------------------------: | :----------------------------------------------------------
+ Year                                | Ano de Nascimento
+ Race                                | A raça da população avaliada
+ Sex                                 | Sexo da população avaliada
+ Average.Life.Expectancy..Years.     | A expectativa de vida em anos dado o ano do nascimento
+ Age.adjusted.Death.Rate             | Taxa de mortalidade ajustada por idade de pessoas nascidas em um determinado ano
+ 
+ Padronizando nome dos campos
+ 
+```{r}
+names(base)[4] <- "Avg_Life_Expect"
+names(base)[5] <- "Age_Adj_Death_Rate"
+
+names(base)
+```
+
+
+## Diferenciando por cor
+
+Acima vimos que a base possui informações da média de anos de vida a cada ano de acordo com gênero e raça. No primeiro exercício fizemos gráficos sem distinguir essas informações, já aqui queremos compara-las.
+
+```{r}
+base_sex <- base %>% filter(Sex %in% c("Female",
+                                        "Male"),
+                            Race == "All Races")
+
+base_sex %>% 
+  ggplot(aes(x=Year,y=Avg_Life_Expect, color= Sex)) +
+  geom_line()
+```
+
+## Diferenciando por tipo de linha
+
+Aqui utilizei o elemento cor para diferenciar a Raça, enquanto usei tipos de linhas distintos para o Gênero.
+
+```{r}
+base_sex_race <- base %>% filter(Sex %in% c("Female",
+                                             "Male"),
+                            Race %in% c("Black",
+                                        "White"))
+
+base_sex_race %>% 
+  ggplot(aes(x=Year,y=Avg_Life_Expect, color= Race, lty=Sex)) +
+  geom_line()
+```
+
+## Dando zoom no gráfico
+
+Ou em outras palavras, alterando os limites das extremidades.
+A visualização do gráfico por volta de 1920 ficou um pouco ruim, e seria legal "dar um zoom" para entender melhor. Uma alternativa é filtrar esse período no tempo e criar um gráfico a partir de um novo objeto.
+
+No entanto uma alternativa é adicionar uma camada ao gráfico que determina os limites dos eixos.
+
+```{r}
+base_sex_race %>% 
+  ggplot(aes(x=Year,y=Avg_Life_Expect, color= Race, lty=Sex)) +
+  geom_line() +
+  xlim(1900,1950)
+```
+
+# Melhorando a estilização do gráfico
+
+As cores e tipos de linhas default podem não ser a melhor escolha, por isso é possível adicionar uma camada no gráfico para atribuir o tema que achar melhor.
+
+```{r}
+base_sex_race %>% 
+  ggplot(aes(x=Year,y=Avg_Life_Expect, color= Race, lty=Sex)) +
+  geom_line() +
+  scale_color_manual(values = c("purple", "green")) +
+  scale_linetype_manual(values = c(1,5))
+```
+
+Temos 7 opções de linhas:
+
+0. blank
+1. solid
+2. dashed
+3. dotted
+4. dotdash
+5. longdash
+6. twodash
+
+E para saber as cores disponíveis basta executar a função abaixo
+
+```{r}
+colors() %>% head(50)
+```
+
+## Scatter Plot
+
+Nem sempre queremos conectar os dados através linhas, muitas vezes estamos tentando descobrir se existe de fato relação entre as informações, a linha preenche um gap que nem sabemos se existe.
+
+O scatter plot é a melhor alternativa, pois literalmente marca os pontos no gráfico respeitando as coordenadas x e y, e assim através dos pontos apenas conseguimos observar se há uma tendência, se traça uma "linha" só pelo acúmulo de pontos.
+
+```{r}
+base_sex %>% 
+  ggplot(aes(x=Year,y=Avg_Life_Expect, color=Sex)) +
+  geom_point()
+```
