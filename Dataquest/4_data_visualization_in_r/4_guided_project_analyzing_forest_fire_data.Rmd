@@ -1,0 +1,214 @@
+---
+title: "Guided Project: Analyzing Forest Fire Data"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Vamos analisar uma base de dados sobre incêndios florestais através de visualizações para encontrar tendências.
+
+A base de dados pode ser obtida através [**deste link**](https://archive.ics.uci.edu/ml/machine-learning-databases/forest-fires/).
+
+## Bibliotecas Utilizadas
+```{r message=FALSE, warning=FALSE}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
+
+## Coleta da Base
+
+Temos uma base com 517 registros e 13 varíáveis a serem exploradas que são informações meteorológicas, índices/métricas usados por cientístas.
+
+```{r}
+base <- read_csv(paste0("https://archive.ics.uci.edu/ml/",
+                        "machine-learning-databases/forest-fires/forestfires.csv"))
+
+glimpse(base)
+```
+Dicionário disponibilizado pela Dataquest para o exercício
+
+Campo             | Significado   
+----------------: | :------------------------------------------------------------------
+ X                | Coordenada espacial do eixo X no mapa do parque de Montesinho: 1 a 9
+ Y                | Coordenada espacial do eixo Y no mapa do parque de Montesinho: 2 a 9
+ month            | Mês do ano: 'jan' a 'dec'
+ day              | Dia da semana: mon' a 'sun'
+ FFMC             | Índice Fine Fuel Moisture Code do Sistema FWI: 18.7 a 96.20
+ DMC              | Índice Duff Moisture Code do Sistema FWI: 1.1 a 291.3
+ DC               | Índice Drought Code do Sistema FWI: 7.9 to 860.6
+ ISI              | Índice Initial Spread Index do Sistema FWI: 0.0 to 56.10 
+ temp             | Temperatura em graus Celsius: 2.2 to 33.30
+ RH               | Umidade Relativa em percentual: 15.0 a 100
+ wind             | Velocidade do vento em km/h: 0.40 to 9.40
+ rain             | Volume de chuva em mm/m2 : 0.0 a 6.4
+ area             | Área queimada da floresta (em hectares): 0.00 to 1090.84
+
+
+A base é composta por registros onde cada registro representa um momento onde pode ou não ter ocorrido um incêndio, apresentando os valores medidos/calculados para cada métrica naquele período e local.
+A data da ocorrência não é clara, só é possível ver as informações consolidadas no mês ou dia da semana.
+
+```{r}
+#conferindo duplicidades ao agrupar por local e data
+base %>% 
+  group_by(X,Y, month,day) %>% 
+  filter(n()>1) %>% 
+  summarise(Qtd = n()) %>% 
+  head()
+
+#checando duplicidades, 513 de 517 linhas são de fato distintas
+base %>% distinct() %>% nrow()
+```
+Resumo da distribuição das variáveis numéricas
+
+```{r}
+base %>% select(-month,-day) %>% summary()
+```
+
+Muitas das informações acima são muito específicas para cientistas que trabalham com esses dados e a primeira vista não nos dizem muita coisa. No entanto [**neste link**](https://cwfis.cfs.nrcan.gc.ca/background/summary/fwi) é possível entender a construção desses índices e vai esclarecer muito da relação entre as variáveis que vamos explorar a seguir.
+
+
+## Transformando informações categóricas 
+
+As informações como Mês e Dia da Senana vão ser úteis nos gráficos, mas por serem categóricas precisam ser configuradas para aparecerem na ordem certa. Caso contrário vão aparecer em ordem alfabética e não fará muito sentido nas análises.
+
+```{r}
+base$month %>% table()
+base$day %>% table()
+```
+
+```{r}
+base <- base %>% 
+  mutate(month = factor(month,
+                        levels = c("jan","feb","mar","apr","may","jun",
+                                   "jul","aug","sep","oct","nov","dec")),
+         day   = factor(day,
+                        levels = c("sun","mon","tue","wed","thu","fri","sat")))
+```
+
+```{r}
+base %>% pull(month) %>% levels()
+base %>% pull(day) %>% levels()
+```
+
+## Analisando a frequência dos incêncios ao longo do tempo
+
+Aqui o intuito é entender a sazonalidade dos eventos, se existem épocas do ano ou até dias da semana mais propícios para esse evento ocorrer.
+
+Criando tabela frequência
+
+```{r}
+month <- base %>% 
+  group_by(month) %>% 
+  summarise(Qtd = n())
+
+month 
+
+day <- base %>% 
+  group_by(day) %>% 
+  summarise(Qtd = n())
+
+day
+```
+
+Visualizando resultado
+
+```{r}
+month %>% 
+  ggplot(aes(x=month, y=Qtd)) +
+  geom_col() +
+  labs(title = "Frequência de Incêndios Florestais ao longo dos meses",
+       x     = "Meses do Ano",
+       y     = "Frequência de Ocorrências")
+  
+```
+
+```{r}
+day %>% 
+  ggplot(aes(x=day, y=Qtd)) +
+  geom_col()+
+  labs(title = "Frequência de Incêndios Florestais por dia da semana",
+       x     = "Dia da Semana",
+       y     = "Frequência de Ocorrências")
+```
+
+Com os gráficos acima foi possível notar que os incendios floretais que estamos analisando costumam acontecer com mais frequência entre Agosto e Setembro e existe uma tendência de acentuar no final de semana.
+
+
+## Encontrando informações que expliquem as tendências
+
+Vamos agora criar gráficos com as informações meteorológicas que temos para descobrir quais tem maior influência nessa tendência ao longo do tempo que enxergamos nos gráficos acima.
+
+Para conseguir visualizações melhores, começamos pivotando as informações da base.
+
+```{r}
+pivot <- base %>% 
+  pivot_longer(c("FFMC","DMC","DC","ISI","temp","RH","wind","rain"),
+               names_to = "indicador",
+               values_to = "valor")
+pivot %>% head(3)
+```
+
+```{r}
+pivot %>% 
+  ggplot(aes(x=month,y=valor)) +
+  geom_col() +
+  facet_wrap(facets = "indicador",
+             scales = "free_y",
+             nrow = 4, ncol = 2)
+```
+
+  Aparentemente, praticamente todas as métricas em análise tiveram pico nos meses de agosto e setembro. No entanto aqui estamos olhando para a frequência de ocorrências. Um ponto que falta ser levado em consideração é a intensidade do incêncio. Uma forma de analisar isso é pela área que foi afetada, quanto maior a área, mais intenso o incêndio.
+  
+```{r}
+pivot %>% 
+  ggplot(aes(x=valor,y=area)) +
+  geom_point() +
+  facet_wrap(
+    facets = "indicador",
+    scales = "free_x",
+    nrow = 3, 
+    ncol = 3)
+```
+
+Os gráficos acima não estão ajudando a chegar a uma conclusão, no entando olhando mais a fundo temos valores extremos (outliers) que estão prejudicando a visualização e impedindo de ter uma análise efetiva.
+
+```{r}
+base %>% 
+  ggplot(aes(x=area)) +
+  geom_histogram()
+  
+```
+
+Para isso vamos filtrar, removendo valores zerados, indicando que não houve área prejudicada, e valores extremos
+
+```{r}
+pivot %>% 
+  filter(area >  0,
+         area <= 300) %>% 
+  ggplot(aes(x=valor,y=area)) +
+  geom_point() +
+  facet_wrap(
+    facets = "indicador",
+    scales = "free_x",
+    nrow = 3, 
+    ncol = 3)
+```
+
+Alguns indicadores que estão relacionados com uma área maior afetada pelos incêndios:
+
+* quando a umidade relativa está baixa
+* quando a temperatura está mais alta
+* quando o FFMC e DC estão mais altos
+* quando não há ocorrência de chuvas
+* já os demais indicadores não trasmitem uma relação tão evidente
+
