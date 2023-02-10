@@ -1,0 +1,85 @@
+---
+title: "String Manipulation"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(stringr)
+```
+
+Ao realizar a limpeza e tratamento de dados é muito comum a necessidade de manipular strings. Em alguns casos para remover inconsistências, ou derivar uma informação em uma nova, separar ou juntar informações, e assim por diante.  
+
+Base que utilizaremos para o teste
+
+```{r}
+base <- read_delim("~/Documentos/base.csv", delim=";")
+glimpse(base)
+```
+
+
+# **parse_number**
+
+Em alguns casos pode ser necessário converter um tipo de dado para numérico, mas antes pode ser necessário remover algum caracter indesejado.
+Uma forma simples de realizar isso é com a função ```parse_number```
+
+```{r}
+base$digito %>% head()
+base <- base %>% mutate(digito = parse_number(digito))
+base$digito %>% head()
+```
+
+
+# **separate**
+
+Caso um campo contenha muitas informações distintas, é possivel usar essa função para separar de acordo com um caracter separador.
+
+```{r}
+base <- base %>% separate(col="endereco",
+                          into= c("logradouro","numero","lat_long"),
+                          sep= ",")
+base
+```
+
+
+# **str_sub**
+
+Nem sempre tem apenas um único caracter atrapalhando o número para conseguir resolver apenas com o ```parse_number```. Uma alternativa é cortar a string para retornar apenas o conteúdo de interesse.
+
+```{r}
+base <- base %>%
+  mutate(lat  = as.numeric(str_sub(lat_long,3,9)),
+         long = as.numeric(str_sub(lat_long,12,-2)))
+base
+
+```
+
+# **str_c e str_pad**
+
+Quando trabalhamos com um CPF por exemplo, pode acontecer de o dígito vir num campo separado, e/ou o CPF vir numérico e perder os zeros à esquerda.
+O ```str_c``` junta os campos enquanto que o ```str_pad``` completa os zeros.
+
+```{r}
+base <- base %>% 
+  mutate(cpf_completo = str_c(cpf,digito) %>% str_pad(11, pad="0"))
+
+base %>% select(cpf_completo, logradouro, numero, lat, long)
+```
+Uma alternativa ao ```str_c``` é o ```paste0```, o ```paste``` por padrão insere um espaço, enquanto o ```paste0``` não faz nenhuma inserção nessa junção, apesar de ambos ter um parâmetro para personalizar esse comportamento.
+
+```{r}
+base <- base %>% 
+  mutate(cpf_completo2 = paste0(cpf,digito) %>% str_pad(11, pad="0"))
+
+base %>% select(cpf_completo2, logradouro, numero, lat, long)
+```
+
