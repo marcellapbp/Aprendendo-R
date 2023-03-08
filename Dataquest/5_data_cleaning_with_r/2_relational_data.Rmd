@@ -1,0 +1,155 @@
+---
+title: "Relational Data"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(glue)
+```
+
+Uma vez feito todas as transformações e manipulações nos dados, é o momento de unir todas as fontes de dados que estão relacionados.
+
+```{r}
+base_1 <- read_delim("~/Documentos/base_1.csv", delim=",")
+glimpse(base_1)
+```
+
+```{r}
+base_2 <- read_delim("~/Documentos/base_2.csv", delim=",")
+glimpse(base_2)
+```
+
+# **duplicated**
+
+Antes de unir bases, é importante verificar se existem duplicidades para evitar cartesiano.
+
+```{r}
+qtde_dup1 <- sum(duplicated(base_1))
+qtde_dup2 <- sum(duplicated(base_2))
+
+glue("Qtde de duplicações base 1: {qtde_dup1}")
+glue("Qtde de duplicações base 2: {qtde_dup2}")
+```
+
+
+# **distinct**
+Outra alternativa é olhar a quantidade de registros distintos.
+
+```{r}
+qtde1      <- nrow(base_1)
+qtde1_dist <- nrow(distinct(base_1))
+
+qtde2      <- nrow(base_2)
+qtde2_dist <- nrow(distinct(base_2))
+
+glue("Qtde de registros base 1: {qtde1}")
+glue("Qtde de registros distintos base 1: {qtde1_dist}")
+
+glue("Qtde de registros base 2: {qtde2}")
+glue("Qtde de registros distintos base 2: {qtde2_dist}")
+
+```
+Podemos verificar distintos na linha inteira (sem passar parâmetros na função), ou podemos nos basear em um campo.
+
+```{r}
+distintos <- base_1 %>% distinct(cpf_completo)
+distintos
+```
+No entanto as demais colunas são eliminadas, é possível preserva-las com o parâmetro .keep_all
+
+```{r}
+distintos <- base_1 %>% distinct(cpf_completo, .keep_all = T)
+distintos
+```
+
+
+# **inner join**
+
+Feito a tratativa nas duplicações é hora de juntar os dados.
+O inner join junta apenas os dados que existirem em ambas bases.
+
+```{r}
+join1 <- inner_join(base_2,
+                    distintos,
+                    by = "cpf_completo")
+
+join1
+```
+
+# **right, left, full join**
+
+No entanto dependendo da necessidade queremos que todos dados de uma base seja preservado mesmo que não haja um registro correspondente na segunda base.
+
+No right ou left estamos escolhendo qual tabela vamos preservar os dados, é mais comum utilizar o left.
+
+No exemplo para ficar claro, vamos manter todos os dados da base distintos e entender onde a tabela fica em cada uma das funções.
+```{r}
+qtde_linhas_dist  <- nrow(distintos)
+qtde_linhas_base2 <- nrow(base_2)
+
+glue("Distintos: {qtde_linhas_dist} linhas")
+glue("Base_2: {qtde_linhas_base2} linhas")
+
+join2 <- left_join(distintos,
+                   base_2,
+                   by= "cpf_completo")
+nrow(join2)
+
+join3 <- right_join(base_2,
+                    distintos,
+                    by= "cpf_completo")
+nrow(join3)
+```
+A linha existente na base distintos, mas não existente na base 2 ficará com campos nulos nas colunas correspondentes a base 2.
+
+```{r}
+join3
+```
+
+Agora se queremos manter os dados de ambas tabelas, o full join é a solução.
+
+```{r}
+join4 <- full_join(base_2,
+                   distintos,
+                   by= "cpf_completo")
+
+nrow(join4)
+```
+Haverá casos nulos nas colunas provenientes de ambas as bases, visto que há registros que existem em uma só das tabelas.
+A quantidade de linhas aqui é maior que em ambas bases.
+```{r}
+join4
+```
+
+# **merge**
+
+A função merge é uma alternativa que pode se comportar com qualquer um dos joins.
+Se nada for especificado será um inner join.
+
+```{r}
+join5 <- merge(base_2,
+               distintos,
+               by="cpf_completo")
+
+nrow(join5)
+```
+Para simular outros tipos de join basta usar o parâmetro all
+
+```{r}
+join6 <- merge(base_2,
+               distintos,
+               by="cpf_completo",
+               all.x = T,
+               all.y = T)
+
+nrow(join6)
+```
