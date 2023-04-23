@@ -1,0 +1,129 @@
+---
+title: "Correlations and Reshaping Data"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+options(scipen = 999)
+```
+
+
+Para checar correlação, pedi ajuda ao Chat GTP para gerar um CSV de informações numéricas metereológicas.
+Abaixo o código sugerido com pequenas adaptações para forçar correlações para efeito de demonstração:
+
+```{r}
+# Carrega a biblioteca random
+library(random)
+
+# Define as colunas
+colunas <- c("Data", "Temperatura (C)", "Pressão Atmosférica (hPa)", 
+             "Umidade (%)", "Velocidade do Vento (km/h)", "Direção do Vento",
+             "Precipitação (mm)", "Nebulosidade (%)", "Índice UV", "Tempestade")
+
+# Gera os dados aleatórios
+dados <- data.frame(matrix(ncol = 10, nrow = 1000))
+colnames(dados) <- colunas
+
+for(i in 1:1000) {
+  datas <- seq.Date(as.Date("2022-01-01"), as.Date("2022-12-31"), by = 1)
+  dados[i, "Data"] <- as.character(sample(datas, 1))
+  dados[i, "Temperatura (C)"] <- runif(1, -10, 40)
+  dados[i, "Pressão Atmosférica (hPa)"] <- runif(1, 900, 1100)
+  dados[i, "Umidade (%)"] <- runif(1, 0, 100)
+  dados[i, "Velocidade do Vento (km/h)"] <- runif(1, 0, 100)
+  direcoes_vento <- c("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+  dados[i, "Direção do Vento"] <- sample(direcoes_vento, 1)
+  dados[i, "Precipitação (mm)"] <- runif(1, 0, 50)
+  dados[i, "Nebulosidade (%)"] <- runif(1, 0, 100)
+  dados[i, "Índice UV"] <- runif(1, 0, 10)
+  tempestades <- c("Sim", "Não")
+  dados[i, "Tempestade"] <- sample(tempestades, 1)
+}
+
+amostra1 <- dados %>% filter(`Temperatura (C)`>30,`Umidade (%)` <20)
+amostra2 <- dados %>% filter(`Temperatura (C)`<0,`Umidade (%)` >70)
+
+dados <- rbind(dados %>% slice_sample(n=10),
+               amostra1 %>% slice(rep(1:n(), each=10)),
+               amostra2 %>% slice(rep(1:n(), each=10)))
+# Salva os dados em um arquivo CSV
+write.csv(dados, "dados-meteorologicos.csv", row.names = FALSE)
+
+dados %>% head()
+```
+
+Simplificando o nome das colunas
+```{r}
+colunas <- c("data", "temp", "press_atmo", "umid", "veloc_vento", "dir_vento", 
+             "precipit", "nebulos", "uv", "tempestade")
+colnames(dados) <- colunas
+```
+
+
+## **Correlação**
+
+Uma maneira eficiente de enxergar a correlação entre duas informações é calculando o coeficiente de correlação de Pearson.
+O cálculo gera um resultado que fica num intervalo de 1.00 a -1.00.
+
+*  1.00 indica correlação positiva, ou seja, quando "a" aumenta "b" também aumenta
+* -1.00 indica correlação negativa, ou seja, quando "a" aumenta "b" diminui
+* entre -0.25 e 0.25 consideramos baixa ou nenhuma correlação
+* valores acima de 0.25 ou abaixo de -0.25 existe alguma correlação
+* valores acima de 0.75 ou abaixo de -0.75 existe forte correlação
+
+Para o cálculo é necessário filtrar appenas colunas numéricas.
+
+```{r}
+matriz_correlacao <- dados %>% 
+  select(where(is.numeric)) %>%
+  cor(use="pairwise.complete.obs")
+
+matriz_correlacao
+```
+
+É possível filtrar apenas uma das informações para buscar entender como ela se relaciona com as demais.
+Nesse caso selecionamos a coluna de temperatura que demonstrou ter forte correlação com a umidade.
+
+```{r}
+df_correlacao <- matriz_correlacao %>%
+  as_tibble(rownames = "variable")
+
+df_correlacao %>% select(variable,temp)
+```
+
+## **Pivot**
+
+Às vezes para plotar um gráfico se faz necessário remodelar o dataset.
+Por exemplo aqui queremos comparar o comportamento das métricas em relação à temperatura, para isso o ideal é ter uma coluna com as informações e outra para os valores.
+Assim se formos plotar em um gráfico, para diferenciar pela cor com legenda.
+
+O Pivot Longer serve justamente para "alongar" o dataset, tranformar colunas em linhas. (O Pivot Wider faz o movimento inverso)
+
+```{r}
+pivot_df <- dados %>% 
+  pivot_longer(cols= c(umid,veloc_vento,precipit,nebulos),
+               names_to  = "tipo_metrica",
+               values_to = "valor_metrica")
+
+pivot_df %>% head()
+```
+
+Com o gráfico plotado fica evidente a correlação entre a temperatura e a umidade.
+Quando a temperatura está alta a umidade fica muito baixa, e vice-versa, o que faz muito sentido comparado com a métrica que vimos acima quase atingindo -1 no coeficiente de correlação.
+
+```{r}
+pivot_df %>% 
+  ggplot(aes(x=valor_metrica,y=temp,color=tipo_metrica))+
+  geom_point()
+```
+
