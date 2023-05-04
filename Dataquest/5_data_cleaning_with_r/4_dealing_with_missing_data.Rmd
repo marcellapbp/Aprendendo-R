@@ -1,0 +1,139 @@
+---
+title: "Dealing with Missing Data"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyr)
+library(readr)
+options(scipen = 999)
+```
+
+
+No dia a dia do profissional da área de dados é comum lidar com bases contendo nulos.
+Mas você sabe o que fazer em cada situação? 
+
+Ignorar, excluir, imputar são algumas opções para resolver este problema.
+
+Vamos checar alguns exemplos e como cada opção nos afeta.
+
+```{r}
+df <- read_csv("~/Documentos/base_alunos.csv")
+
+glimpse(df)
+```
+
+## Notas média dos alunos por matéria
+Temos uma base com notas e faltas de alunos de acordo com as disciplinas, vamos olhar a média das notas e faltas.
+
+```{r}
+df %>% 
+  group_by(materia) %>% 
+  summarize(media_nota  = mean(nota_bimestre),
+            media_falta = mean(qtd_faltas))
+```
+
+O resultado saiu quase todo em branco, pois quando há nulos não tem como calcular.
+
+Alguma informação combinado com nulo sempre dará nulo.
+
+## Ignorando nulos
+
+Podemos então usar o parâmetro da função mean que ignora os nulos.
+
+```{r}
+df %>% 
+  group_by(materia) %>% 
+  summarize(media_nota  = mean(nota_bimestre, na.rm = T),
+            media_falta = mean(qtd_faltas, na.rm = T))
+
+```
+
+Mas ainda assim não ficou legal, temos registros onde a disciplina está nula, nesse caso é melhor eliminar a linha toda quando não se sabe a disciplina.
+
+## Dropando linhas com nulos em uma determinada coluna
+
+```{r}
+df %>% 
+  drop_na(materia) %>% 
+  group_by(materia) %>% 
+  summarize(media_nota  = mean(nota_bimestre, na.rm = T),
+            media_falta = mean(qtd_faltas, na.rm = T))
+```
+
+
+A função drop_na eliminou todos os registros onde a materia estava nula.
+
+Caso uma coluna não seja informada, a função elimina qualquer linha que contenha nulos.
+
+*Então por que não usamos o drop_na sempre para eliminar todas as linhas que tenha qualquer nulo ao invés de repetir o parâmetro na.rm em todos os cálculos?*
+
+## Dropando linhas com nulos em qualquer lugar do dataset
+
+```{r}
+df %>% 
+  drop_na() %>% 
+  group_by(materia) %>% 
+  summarize(media_nota  = mean(nota_bimestre),
+            media_falta = mean(qtd_faltas))
+
+```
+
+Essa alternativa acaba distorcendo um pouco o cálculo, pois quando elimina uma linha inteira é eliminado linhas com informações.
+
+## Conferindo total de nulos por coluna
+
+```{r}
+colSums(is.na(df))
+```
+
+Tem muitos registros com nulos nas faltas, vamos investigar um pouco mais esse campo
+
+```{r}
+df$qtd_faltas %>% table(useNA = "always")
+
+df %>% 
+  filter(is.na(qtd_faltas)) %>% 
+  select(nota_bimestre) %>% table(useNA = "always")
+```
+
+Não existem registros com 0 faltas, provavelmente o nulo representa 0 faltas.
+
+E esses alunos sem faltas têm notas muito altas, e como estamos excluindo do cálculo está diminuindo muito a média das notas. 
+
+Então nesse exercício faz mais sentido usar o drop_na apenas na matéria, e usar o na.rm para remover pontualmente os nulos de cada cálculo isolado.
+
+
+## E quando entra a imputação?
+
+Vamos pensar que no caso da nota quando está nula é porque o aluno não compareceu no dia da prova, e quando está zero é porque o aluno compareceu, mas errou todas as questões zerando a prova. 
+
+Ainda assim o aluno que não compareceu levou um zero, mas como está nulo e estamos desconsiderando o resultado final fica "melhor" com menos notas zero do que de fato tem. 
+
+Então nesse caso temos que imputar os nulos.
+
+```{r}
+df <- df %>%
+    mutate(nota_bimestre = replace_na(nota_bimestre, 0))
+
+colSums(is.na(df))
+```
+
+Por fim chegamos no resultado abaixo
+
+```{r}
+df %>% 
+  drop_na(materia) %>% 
+  group_by(materia) %>% 
+  summarize(media_nota  = mean(nota_bimestre, na.rm = T),
+            media_falta = mean(qtd_faltas, na.rm = T))
+```
+
