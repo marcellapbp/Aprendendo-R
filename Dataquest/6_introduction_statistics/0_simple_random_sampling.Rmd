@@ -1,0 +1,111 @@
+---
+title: "Simple Random Sampling"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(glue)
+library(ggplot2)
+```
+
+**Como a Estatística pode nos ajudar?**
+
+A estatística é extremamente necessária na análise de grande volume de dados. Com técnicas estatísticas podemos organizar, sumarizar e visualizar os dados nos ajudando a extrair insights para resolução de problemas.
+
+Por exemplo, imagine que uma empresa deseja realizar uma pesquisa de satisfação com seus funcionários. Para uma empresa com menos de 10 funcionários é fácil olhar os dados individualmente e chegar em uma conclusão. Agora quando esse volume ultrapassa 100, 1000, ou 10000 funcionários, olhar individualmente se torna praticamente impossível. Sendo assim podemos fazer cálculos, tabelas frequência e utilizar gráficos para melhor interpretar esses dados.
+
+**Amostra vs População**
+
+Agora imagine uma situação onde queremos aplicar uma pesquisa com os moradores da cidade de São Paulo, por mais que através de técnicas estatísticas consigamos analisar milhões de dados, aplicar uma pesquisa para tamanha população pode ser muito custosa e levar tempo para concluir. É aqui que podemos usar a técnica da amostragem e selecionar uma parte dessa população, alguns milhares, para aplicar a pesquisa e conseguir extrapolar os resultados para toda a população.
+
+Veja que nesse exemplo, os paulistanos é apenas uma parcela das pessoas moradoras do Estado de São Paulo, ou do Brasil, mas como o público de interesse é apenas Paulistanos, então os Paulistanos é a nossa **População** estatísticamente falando, e a parcela dessa população selecionada para aplicar a pesquisa é nossa **Amostra**. Sendo assim usamos a amostra para conseguir responder perguntas e chegar à conclusões que diz respeito ao todo (População).
+
+Nesses exemplos utilizamos pessoas, mas o objeto de análise pode ser animais, países, vegetais e etc, então podemos chamar de *indivíduos*, *unidades*, *eventos*, ou *observações*. Então quando falamos de população podemos chamar de indivíduos da população, e quando falamos da amostra, indivíduos da amostra e assim por diante.
+
+## **Explorando dados do WNBA**
+
+O dataset pode ser acessado através [deste link](https://www.kaggle.com/datasets/jinxbe/wnba-player-stats-2017).
+E o glossário dos termos [neste link](https://www.basketball-reference.com/about/glossary.html).
+
+```{r}
+wnba <- read_csv("/home/marcella/Downloads/WNBA_Stats.csv")
+
+glimpse(wnba)
+```
+
+Vamos calcular a maior quantidade de jogos que as jogadoras participaram.
+Quando fazemos esse cálculo para a população chamamos de **parâmetro**, enquanto que para a amostra chamamos de **estatística**.
+Na amostra é comum o cálculo ser diferente, afinal é uma parcela das informações, está imcompleta.
+Chamamos essa divergência de **erro amostral**, e pode ser calculada através da diferença entre o parâmetro e a estatística.
+
+```{r}
+parameter <- max(wnba$`Games Played`, na.rm=TRUE)
+glue("Parâmetro: {parameter}")
+
+set.seed(1)
+sample <- sample(wnba$`Games Played`, size=30)
+print("Amostra")
+sample
+
+statistic <- max(sample, na.rm=TRUE)
+glue("Estatística: {statistic}")
+
+sampling_error <- parameter-statistic
+glue("Erro Amostral: {sampling_error}")
+```
+
+Queremos sempre alcançar o menor erro amostral possível, para ter resultados confiáveis que se pareçam com o resultado da população. Para isso a amostra precisa ser **representativa** o suficiente, com característica muito parecidas com a população.
+
+Para garantir essa representatividade, usamos métodos que selecione os indivíduos de forma aleatória, assim dando chances iguais para um indivíduo ser selecionado na amostra. Chamamos de **Amostragem Aleatória Simples**
+
+Usamos a função ```sample``` que já faz essa amostragem aleatória em vetores, mas para dataframes podemos utilizar a função ```slice_sample```. Estas funções têm o parâmetro replacement que indica se cada observação pode ou não se repetir, ser selecionado mais de uma vez, o padrão é FALSE (sem repetição).
+
+Como a amostragem é aleatória, usamos o código ```set.seed(1)```, e escolhemos um número que será mantido em todas execuções, assim é possível repetir o mesmo cenário em cada execução. O que é muito útil para debugar, ou para dar andamento em estudos que não vamos concluir numa única execução, ou até para tornar o estudo reproduzível por outras pessoas também. Isso garante que o resultado será o mesmo, ainda que a amostra seja de fato aleatória.
+
+Agora vamos ver como se comporta a média do número de pontos feitos por temporada por cada jogadora (PTS) em diversas amostras com tamanho de 10 observações.
+
+```{r}
+mean_points<- replicate(100, mean(sample(wnba$PTS,size=10)))
+mean_points
+```
+
+Percebemos que a média variou bastante, mas vamos visualizar melhor com a ajuda de um Scatter Plot
+```{r}
+mean_points<- replicate(100, mean(sample(wnba$PTS,size=10)))
+sample_number <- 1:100
+
+df <- tibble(sample_number,mean_points)
+
+ggplot(df, aes(sample_number,mean_points))+
+  geom_point()+
+  geom_hline(yintercept = mean(wnba$PTS), 
+    color = "blue") +
+    ylim(90, 310)
+```
+
+O gráfico nos ajudou a notar que o resultado de cada amostra está muito aleatório e não se aproximando da média real da população. Uma forma de corrigir isso é aumentando o tamanho de observações de cada amostra, isso ajuda a diminuir o erro amostral também.
+
+```{r}
+mean_points<- replicate(100, mean(sample(wnba$PTS,size=100)))
+sample_number <- 1:100
+
+df <- tibble(sample_number,mean_points)
+
+ggplot(df, aes(sample_number,mean_points))+
+  geom_point()+
+  geom_hline(yintercept = mean(wnba$PTS), 
+    color = "blue") +
+    ylim(90, 310)
+```
+
+
