@@ -1,0 +1,199 @@
+---
+title: "Stratified Sampling and Cluster Sampling"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(glue)
+library(ggplot2)
+library(purrr)
+```
+
+No último exercício aprendemos a amostrar os dados de uma população usando a estratégia da Amostragem Aleatória Simples.
+No entanto essa abordagem funciona bem em dados uniformes. Quando temos uma população com características em maior abundância que outras, as características menos representadas podem acabar sendo omitidas da amostragem.
+Uma amostragem que não é representativa, que não se assemelha a população original, pode acabar enviesando os resultados e por consequência chegarmos a conclusões equivocadas.
+
+Com o objetivo de criar uma amostra representativa, podemos realizar uma Amostragem Estratificada, na qual tentamos replicar a característica e proporção dessas características da população na amostra.
+
+## **Explorando dados do WNBA**
+
+O dataset pode ser acessado através [deste link](https://www.kaggle.com/datasets/jinxbe/wnba-player-stats-2017).
+
+E o glossário dos termos [neste link](https://www.basketball-reference.com/about/glossary.html).
+
+```{r}
+wnba <- read_csv("/home/marcella/Downloads/WNBA_Stats.csv")
+
+glimpse(wnba)
+```
+Vamos por exemplo calcular a média de pontos por temporada da população e comparar com o resultado da amostra simples.
+
+```{r}
+mean(wnba$PTS)
+
+set.seed(1)
+amostra <- sample_n(wnba, 10)
+
+mean(amostra$PTS)
+```
+
+O resultado da média da amostra se distanciou muito da média da população. 
+Provavelmente isso se dá, pois no dataset temos informações de jogadoras do basquete de diferentes posições que portanto pontuam de forma diferente. Se a amostra não garantir a mesma proporção de posições, a média vai distoar da população.
+
+Vamos então ver a média por posição para conferir se essa ideia faz sentido.
+
+```{r}
+wnba %>%
+group_by(Pos) %>%
+sample_n(10) %>%
+summarise(mean_pts_season = mean(PTS)) %>%
+arrange()
+```
+
+Um outro fator que pode estar influenciando na pontuação é a quantidade de jogos que cada jogadora participou, afinal quem participou de mais jogos tem mais chances de pontuar mais.
+
+```{r}
+min(wnba$`Games Played`)
+max(wnba$`Games Played`)
+```
+
+De fato tem muita variação no dataset, tem jogadoras que partiiciparam de apenas 2 jogos, enquanto que outras participaram de até 32 partidas.
+
+E se a gente separar em por exemplo 3 grupos de acordo com a quantidade de partidas que as jogaras participaram, como influencia essa média?
+
+```{r}
+wnba <- wnba %>% mutate(games_cut = cut(`Games Played`, breaks = 3)) 
+
+wnba%>% 
+  group_by(games_cut) %>% 
+  summarise(qtd = n()) %>% 
+  mutate(Perc = qtd/sum(qtd) * 100) %>% 
+  arrange(desc(Perc))
+```
+
+Com o cálculo acima vemos que +70% da população tem participação entre 23 a 32 partidas, enquanto que 9% participa de até 12 partidas.
+
+Vamos então criar uma função para gerar uma amostra que respeite essa proporção e ver como isso afeta a média.
+Assim como nos exercício anterior, vamos ver isso num gráfico e gerando dezenas de amostras para perceber o efeito desse cálculo.
+
+```{r}
+sample_mean <- function(x){
+  under_12 <- wnba %>% 
+    filter(`Games Played` <= 12) %>% 
+    sample_n(1)
+  btw_13_22 <- wnba %>% 
+    filter(`Games Played` > 12 & `Games Played` <= 22) %>% 
+    sample_n(2)
+  over_22 <- wnba %>% 
+    filter(`Games Played` > 22) %>% 
+    sample_n(7)
+  
+  combined <- bind_rows(under_12, btw_13_22, over_22)
+  mean(combined$PTS)
+}
+
+sample_number <- 1:100
+mean_points_season <- map_dbl(sample_number, sample_mean)
+
+df <- tibble(sample_number, mean_points_season)
+
+ggplot(data = df, 
+       aes(x = sample_number, y = mean_points_season)) +
+    geom_point() +
+    geom_hline(yintercept = mean(wnba$PTS), 
+               color = "blue") +
+    ylim(80, 320)
+                
+```
+
+Existe uma forma mais eficiente de criar uma amostra estratificada usando a função ```sample_frac```.
+Ao invés de informar a quantidade absoluta de linhas, podemos passar o valor percentual desejado.
+Nesse exemplo de 10 registros em uma base de 143 observações, temos 7% da base, portando passamos 0.07 como parâmetro da função.
+O uso do group_by fará com que a função respeite a proporção da variável de interesse.
+
+```{r}
+sample <- wnba %>% 
+  group_by(games_cut) %>% 
+  sample_frac(0.07)
+
+sample %>% 
+  group_by(games_cut) %>% 
+  summarise(qtd = n()) %>% 
+  mutate(Perc = qtd/sum(qtd) * 100) %>% 
+  arrange(desc(Perc))
+```
+
+No entanto percebemos no gráfico que essa abordagem de amostrar considerando a quantidade de partidas em que cada jogadora participou não foi eficiente. Pensando no caso de uma jogadora ter jogado apenas 10 minutos, enquanto outra jogou 40, ainda assim ambas jogaram uma partida, mas as oportunidades de marcar pontos são diferentes. Sendo assim faz mais sentido estratificar a amostra pensando no tempo jogado por cada jogadora.
+
+```{r}
+wnba <- wnba %>% mutate(min_cut = cut(MIN, breaks = 3,
+                                      dig.lab = max(nchar(MIN),na.rm = T))) 
+
+wnba %>% group_by(min_cut) %>% 
+  summarise(qtd=n()) %>% 
+  mutate(Perc = qtd/sum(qtd))
+```
+
+Reproduzindo o mesmo gráfico agora com a amostra baseada nos minutos jogados, podemos enxergar uma melhor performance na média das amostras se aproximando mais da média da população do que na tentativa anterior.
+
+```{r}
+sample_mean <- function(x){
+  sample <- wnba %>% 
+  group_by(min_cut) %>% 
+  sample_frac(0.07)
+  
+  mean(sample$PTS)
+}
+
+sample_number <- 1:100
+mean_points_season <- map_dbl(sample_number, sample_mean)
+
+df <- tibble(sample_number, mean_points_season)
+
+ggplot(data = df, 
+       aes(x = sample_number, y = mean_points_season)) +
+    geom_point() +
+    geom_hline(yintercept = mean(wnba$PTS), 
+               color = "blue") +
+    ylim(80, 320)
+                
+```
+
+## Clustering Sample
+
+Imagine que coletar as informações de jogos de basquete do WNBA não fosse tão simples e para cada time houvesse um site diferente para essa coleta. Coletar de todos os lugares pode consumir muito tempo ou dependendo da situação ser impossível (pode ser uma consulta com um custo que não estamos dispostos a pagar por todos registros por exemplo). Nesse caso poderíamos escolher alguns sites/times para fazer essa coleta, imaginando que cada time é um cluster, estaríamos selecionando/amostrando alguns clusters para a análise
+
+```{r}
+clusters <- unique(wnba$Team) %>% sample(4)
+clusters
+```
+
+
+```{r}
+sample <- wnba %>%
+filter(Team %in% clusters)
+
+smp_height <- mean(sample$Height)
+smp_height
+
+wnba_height <- mean(wnba$Height)
+wnba_height
+
+sampling_error_height <- wnba_height - smp_height
+sampling_error_height
+```
+
+
+
+
+
