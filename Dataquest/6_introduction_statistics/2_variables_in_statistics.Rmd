@@ -1,0 +1,186 @@
+---
+title: "Variables in Statistics"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(glue)
+library(ggplot2)
+library(purrr)
+```
+
+Variáveis em Estatística são informações/características que variam de observação para observação.
+Existem as **variáveis quantitativas**, quando estamos medindo tamanhos e quantidades; e **variáveis qualitativas**, são informações categóricas que não podem ser calculadas, normalmente contém texto, podendo conter números, mas que representem categorias.
+
+
+## **Explorando dados do WNBA**
+
+O dataset pode ser acessado através [deste link](https://www.kaggle.com/datasets/jinxbe/wnba-player-stats-2017).
+
+E o glossário dos termos [neste link](https://www.basketball-reference.com/about/glossary.html).
+
+```{r}
+wnba <- read_csv("/home/marcella/Downloads/WNBA_Stats.csv")
+
+glimpse(wnba)
+```
+Exemplo de variáveis qualitativas
+```{r}
+wnba %>%select(Name, College, Pos) %>% head()
+```
+
+Exemplo de variáveis quantitativas
+```{r}
+wnba %>%select(Age, Height, PTS, FTM) %>% head()
+```
+
+
+Variáveis qualitativas, quando comparamos um indivíduo com outro, conseguimos perceber se há diferença. Mas não conseguimos determinar o tamanho e nem a direção dessa diferença (quem é maior ou menor), algo que em variáveis quantitativas é possível.
+
+
+Existe um sistema de regras chamado Escala de Medida que possui 4 formas de medir uma variável.
+
+* ordinal
+* nominal
+* intervalo
+* razão
+
+
+## Escala Nominal
+
+Numa escala nominal:
+
+* percebemos quando os indivíduos são diferentes
+* não podemos quantificar essa diferença
+* nem indicar a direção da diferença
+* mas podemos descrever as qualidades
+
+Ainda que os valores dessa variável use números, os números representam classificações. Se uma jogadora de basquete usa a camisa 5 e outra a camisa 8, não faz sentido analisar qual é maior ou menor, ou dizer que o tamanho da diferença entre uma e outra camisa é 3. Os números são identificadores, não quantificam nada.
+
+```{r}
+wnba %>% select(Pos) %>% head()
+```
+
+
+## Escala Ordinal
+
+Agora vamos pensar na seguinte situação, se transformarmos a Altura que está em valores numéricos em uma classificação de Baixo, Médio ou Alto, a nova variável está numa escala nominal?
+
+```{r}
+wnba %>%
+  mutate(Height_labels = case_when(
+    Height <= 170 ~ "Baixo",
+    Height > 170 & Height <= 180 ~ "Médio",
+    Height > 180 ~ "Alto"
+  )) %>% 
+  select(Height,Height_labels) %>% 
+  head()
+```
+
+Apesar de ser um texto, sabemos que Baixo é menor que Médio ou Alto, e por isso a variável não se encaixa na escala nominal.
+
+No exemplo da Altura que convertemos para classificações foi possível:
+
+* dizer que os indivíduos são diferentes
+* qual a direção da diferença (Baixo é menor que Alto por exemplo)
+* mas ainda não é possível quantificar o tamanho dessa diferença
+
+E é com essas características que temos a escala Ordinal.
+
+Se temos uma competição, uma corrida, onde o Atleta A ficou na posição 1 do ranking, e o Atleta B na posição 2, sabemos que o 1 foi melhor, mais rápido que o primeiro, mas só usando este dado não é possível dizer quantos segundos ou minutos mais rápido.
+
+Ou na hora de avaliar um produto numa escala de 1 a 5, onde 1 a pessoa odiou o produto, e 5 a pessoa amou. Sabemos que a nota vai gradativamente aumentando de acordo com o grau de satisfação da pessoa, mas ainda assim não conseguimos quantificar a diferença entre essas notas.
+
+## Intervalos e razão
+
+Com a Escala de Intervalos ou Razão é possível mensurar o tamanho da diferença entre dois indivíduos.
+A diferença entre Intervalo ou Razão está na natureza do ponto zero.
+
+Na Escala de Razão, zero (0) significa sem quantidade, por exemplo Peso == 0 significa ausência de peso.
+
+Já a mesma variável peso numa escala de Intervalo, quando está zerada indica a presença de peso. Isso se dá, pois o cálculo é feito a partir da média da população.
+Se o peso do indivíduo é igual ao da média, o resultado será zero. Então o cálculo indica o quanto o indivíduo está diferente da média.
+
+```{r}
+wnba <- wnba %>% 
+  mutate(Weight_deviation = Weight - mean(Weight, na.rm = TRUE))
+
+wnba %>% select(Weight, Weight_deviation) %>% sample_n(5)
+```
+
+
+A variávei Peso (Weight) está numa escala de razão, enquanto a Weight_deviation está numa escala de intervalo.
+
+Na escala de razão há duas formas de estabelecer a diferença entre 2 indivíduos:
+
+* subtrair o valor do Peso de um indivíduo para o outro (Ex: 90 kg - 75 kg = 15 kg de diferença)
+* calcular a proporção de diferença entre um Peso para outro (Ex: o indivíduo de 90 kg está 1,2 acima comparado ao indivíduo com peso de 75 kg. Basta dividir 90 por 75)
+
+
+Agora na escala de intervalo, até é possível calcular a diferença de peso entre 2 indivíduos, olhando o exemplo abaixo, tanto pela escala de intervalo como de razão notamos 5kg de diferença. No entanto na escala de intervalo, se formos calcular proporção como fizemos na escala de razão, dividindo 10 por 5 vai resultar em 2 e induzir ao erro, fazendo entender que um indivíduo tem o peso 2 vezes maior que o outro.
+
+```{r}
+wnba %>% select(Name, Weight,Weight_deviation) %>% 
+  filter(Name %in% c("Clarissa dos Santos","Alex Montgomery")) 
+```
+
+Com esse exemplo, a escala de intervalo parece não ser tão útil e portanto rara. No entanto existe utilidade para essa escala dependendo da informação, um exemplo é o tempo. Afinal não temos uma data com o valor zero, que defina com precisão o início do tempo, ou a ausência dele. Em outras palavras não conseguimos definir numa data como o "agora" há quanto tempo estamos desde o tempo zero.
+
+Outro exemplo é a temperatura, quando dizemos que está 0ºC não significa que há ausência de temperatura. E que inclusive os graus podem ir abaixo de zero. Também é incorreto dizer que se ontem foi 15ºC e hoje está 30ºC, hoje foi o dobro da temperatura de ontem, só podemos afirmar que foi 15ºC mais quente. Dessa forma não podemos analisar uma informação de usa escala de intervalo com o raciocínio de uma escala de razão. Exceto a temperatura na escala Kelvin, onde 0k de fato significa ausência de temperatura.
+
+
+Abaixo um resumo do comportamento das escalas.
+
+ checar/medir            | Nominal     | Ordinal     | Intervalo   | Proporção   
+:----------------------: | :---------: | :---------: | :---------: | :---------: 
+ se é diferente          | S           | S           | S           | S           
+ a direção da diferença  | N           | S           | S           | S           
+ o tamanho da diferença  | N           | N           | S           | S           
+ variáveis quantitativas | N           | S           | S           | S           
+ variáveis qualitativas  | S           | S           | N           | N           |
+
+
+## Variáveis Discreta e Contínua
+
+Uma lição que aprendemos até então é que nas escalas de intervalo e razão só é possível utilizar valores numéricos.
+Vamos dar uma olhada em duas informações da base, o Peso e os Pontos acumulados na temporada.
+
+Se um jogador tem 92 pontos e outro tem 93, eles estão a 1 ponto de diferença, não tem como nessa informação ter meio ponto, ou 0.2 ponto. Os valores são inteiros, e dessa forma podemos chamar a variável de **discreta**.
+
+Agora se olhamos o peso, entre 92 e 93 kg existe uma infinidade de valores possíveis nas casas decimais, e portanto chamamos essas variáveis de **contínuas**.
+
+```{r}
+wnba %>% select(Name, Weight,PTS) %>% 
+  head()
+```
+
+
+Para determinar se a variável é contínua ou discreta, precisamos entender a natureza da informação, e não somente se limitar as valores disponíveis no momento. Por exemplo o próprio Peso que vemos acima aparenta ser discreta, mas sabemos que isso se dá apenas pelo fato da informação estar arredondada e existe uma infinidade de pesos nas casas decimais que representam as gramas com precisão.
+
+
+Agora vamos olhar o Peso de algumas jogadoras.
+
+```{r}
+wnba %>% 
+  filter(Weight == 77) %>% 
+  pull(Weight) %>% head()
+```
+
+Apesar de várias jogadoras terem na base o Peso de 77kg, sabemos que o peso não é igual.
+Provavelmente o valor foi arredondado e se tivesse uma casa decimal poderia variar entre 76,5kg até 77,5kg.
+Portanto, em geral, toda variável contínua possui um intervalo entre os valores, e o limite desses valores são chamados de **limites reais**, sendo o menor valor possível chamado de limite inferior (Ex 76,5kg), e o maior valor de limite superior (Ex 77,5kg).
+
+
+
+
+
