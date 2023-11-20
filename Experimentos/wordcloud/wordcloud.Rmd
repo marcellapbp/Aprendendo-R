@@ -1,0 +1,74 @@
+---
+title: "WordCloud"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+Decidi criar uma **Nuvem de Palavras** utilizando a própria linguagem R para utilizar como Capa do **LinkedIn**. 
+Selecionei à dedo termos relacionado à Ciência de dados que fazem parte do meu dia a dia.
+
+Utilizei como base a documentação oficial [**neste link**](https://r-graph-gallery.com/wordcloud.html).
+
+Para começar temos que instalar os pacotes e importar as bibliotecas.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#install.packages("wordcloud2")
+#install.packages("webshot")
+#install.packages("htmlwidgets")
+
+library(readr)
+library(dplyr)
+
+library(wordcloud2) 
+library(htmlwidgets)
+library(webshot)
+webshot::install_phantomjs()
+```
+
+Vamos iniciar importando o csv que eu criei contendo as palavras que escolhi e o peso que atribuí à elas.
+O peso influencia o tamanho das palavras na imagem final.
+Ordenei pelo peso de forma decrescente, pois a função que monta a nuvem de palavras vai iniciar pelas palavras de maior peso e a organização vai ficar mais atrativa.
+
+```{r}
+df <- read_delim("wordcloud.csv", delim=";") %>% arrange(desc(freq))
+
+df %>% head()
+```
+
+* Na função informei a base com as palavras e pesos, através do parâmetro size adequei o tamanho das palavras.
+* Para as cores, gostei mais do fundo preto com cores claras para as palavras para melhorar o contraste. 
+* Para o formato da nuvem, me agradou o formato de "estrela" na distribuição das palavras *(existem outros formatos: 'circle', 'cardioid', 'diamond', 'triangle-forward', 'triangle', 'pentagon')*
+* E por fim, rotacionei as palavras todas na mesma direção ao invés de uma ordem mais irregular como é por padrão.
+
+```{r}
+my_graph <- 
+  wordcloud2(df
+             ,size=0.6
+             ,color='random-light'
+             ,backgroundColor="black"
+             ,shape = "star"
+             ,minRotation = -pi/6
+             ,maxRotation = -pi/6
+             ,rotateRatio = 1)
+# my_graph
+```
+
+
+Por padrão a função gera um resultado em html, então temos uma maneira de salvar esse arquivo html e tirar um "screeshot" para gerar um arquivo do tipo imagem (png).
+Utilizei o tamanho de imagem mais utilizado no LinkedIn.
+Vale lembrar que a cada execução muda um pouco a ordem e cores de forma aleatória.
+
+```{r}
+saveWidget(my_graph,"tmp.html",selfcontained = F)
+
+webshot("tmp.html","result.png", delay =5, vwidth = 1584, vheight=396)
+```
+
