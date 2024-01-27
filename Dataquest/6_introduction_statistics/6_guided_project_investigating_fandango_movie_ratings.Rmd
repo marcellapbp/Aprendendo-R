@@ -1,0 +1,168 @@
+---
+title: "Guided Project: Investigating Fandango Movie Ratings"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+```
+
+[Fandango](https://www.fandango.com/) é uma plataforma de compra de ingressos para cinema, além de também permitir que usuários dêem notas aos filmes. Em 2015 o jornalista Walt Hickey fez uma análise sobre a plataforma e publicou [neste artigo](https://fivethirtyeight.com/features/fandango-movies-ratings/).
+
+Em resumo o jornalista evidenciou que a plataforma inflava as notas dadas aos filmes enviesando os dados, comparado aos concorrentes as notas são bem mais altas, mas além disso as notas dadas em estrelas de 0 a 5 exibidas no poster eram maiores que as notas reais, normalmente com meia estrela a mais. A empresa na época se justificou dizendo que havia um bug no site que seria corrigido, mas na verdade removeu os dados reais impossibilitando de confirmar se de fato foi corrigido.
+
+Sabendo disso vamos avaliar dados anteriores e posteriores a esse estudo para entender se houve mudança no sistema de rating do site da Fandango.
+
+
+## **Explorando os dados do site Fandango**
+
+Vamos utilizar os dados coletados pelo jornalista Walt Hickey, porém referente ao período anterior a análise feita. Os dados se encontram disponíveis [neste link](https://github.com/fivethirtyeight/data/tree/master/fandango).
+
+Um membro do time Dataquest coletou dados de filmes lançados em 2016 e 2017 que são referentes a um período posterior à análise do jornalista, e pode ser encontrado [neste link](https://github.com/mircealex/Movie_ratings_2016_17).
+
+```{r}
+base_anterior  <- read_csv("fandango_score_comparison.csv")
+glimpse(base_anterior)
+```
+
+```{r}
+base_posterior <- read_csv("movie_ratings_16_17.csv")
+glimpse(base_posterior)
+```
+
+## Preparando os dados para análise
+
+Selecionando colunas de interesse
+
+```{r}
+base_anterior <- base_anterior %>% 
+  select(FILM, Fandango_Stars, Fandango_Ratingvalue, Fandango_votes, Fandango_Difference)
+
+base_posterior <- base_posterior %>% 
+  select(movie, year, fandango)
+```
+
+
+Lendo o README de cada repositório é possível notar que as amostras não foram aleatórias, e que na verdade tiveram critérios específicos para seleção e em alguns caso não muito claros.
+
+A base de Walt Hickey tem apenas filmes com votos em algumas plataformas concorrentes à Fandango, e pelo menos 30 votos na Fandango. Os dados foram extraídos em agosto de 2015.
+
+A outra base tem filmes populares com número significante de votos (mas não revela quantos votos) e filmes lançados a partir de 2016.
+
+
+Apesar de não ser o cenário ideal para coletas dos dados, podemos mudar ligeiramente nosso objetivo, analisar e tentar extrair resultados relevantes. Pois uma nova coleta de dados da forma necessária para atingir o objetivo inicial seria quase impossível.
+Sendo assim, vamos então observar se houve mudança de comportamento entre as notas dos anos de 2015 e 2016.
+
+
+O primeiro passo é tentar isolar na primeira base apenas filmes do ano de 2015.
+
+```{r}
+#isolando 2015
+base_2015 <- base_anterior %>% 
+  mutate(year = str_sub(FILM, -5, -2)) %>% 
+  filter(year == 2015) 
+
+#conferindo se funcionou
+base_2015$year %>% table()
+
+#limpeza do que não é mais necessário
+rm(base_anterior)
+
+#resultado
+base_2015 %>% head()
+```
+Seguindo a mesma ideia, vamos filtrar apenas 2016 na segunda base.
+
+
+```{r}
+#isolando 2016
+base_2016 <- base_posterior %>% 
+  filter(year == 2016) 
+  
+#conferindo se funcionou
+base_2016$year %>% table()
+
+#limpeza do que não é mais necessário
+rm(base_posterior)
+
+#resultado
+base_2016 %>% head()
+```
+
+
+O exercício sugere que investiguemos a popularidade dos filmes presentes na segunda base já que o critério de popularidade não foi tão claro igual a primeira baseada em 30 votos.
+No entanto uma vez que o site só funciona nos EUA, não vamos conseguir avaliar a representatividade e assumir que está ok para seguir com o exercício.
+
+Outro ponto importante de ser analisado é se a nota continua usando a mesma métrica de 2015.
+Usando o summary é possível notar que nenhuma nota ultrapassou 5, onde chegamos a conclusão que o sistema ainda consiste em estrelas de 1 a 5. No entanto já é possível notar uma diferença interessante na menor nota, que em 2016 chegou a 2,5. Esse já pode ser um indício que o site mudou de comportamento.
+
+```{r}
+base_2015$Fandango_Stars %>% summary()
+base_2016$fandango %>% summary()
+```
+
+## Analisando os dados
+
+Existem muitas maneiras de analisar os dados, mas de forma geral, podemos num gráfico desenhar a distribuição de ambos os anos para ter uma ideia de como se comporta.
+
+Primeiro unificando as bases para facilitar a plotagem.
+```{r}
+base_completa <- rbind(
+  base_2015 %>% select(movie = FILM,
+                       year,
+                       fandango = Fandango_Stars),
+  base_2016
+)
+base_completa %>% sample_n(10)
+```
+Enfim gerando o gráfico de forma a respeitar a escala de 0 a 5 estrelas de meia em meia estrela.
+Conseguimos notar que de fato o comportamento de 2016 mudou, e os filmes ficaram ligeiramente com menor nota que se comparado ao ano de 2015. Isso pode indicar que de fato foi corrigido o viés levantado no estudo do jornalista.
+
+```{r}
+base_completa %>% 
+  ggplot(aes(x=fandango,color=year))+
+  geom_density()+
+  labs(x = "Nº Estrelas Fandango", 
+       y = "Densidade", 
+       title = "Comparação da distribuição de estrelas Fandango em filmes 2015 x 2016")+
+  scale_x_continuous(breaks = seq(0,5, by = 0.5), 
+                     limits = c(0, 5))
+           
+```
+
+Mas agora vamos investigar mais a fundo algumas informações, será que os dados são comparáveis?
+Vamos investigar algumas métricas.
+
+```{r}
+#calculo para moda
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+stats <-
+base_completa %>% 
+  group_by(year) %>%
+  summarise(n    = n(),
+            mean = mean(fandango),
+            min  = min(fandango),
+            max  = max(fandango),
+            mode = mode(fandango),
+            median = median(fandango))
+
+stats
+```
+
+com o resultado acima é possível notar tanto a média, moda e valor mínimo que houve uma queda na nota, reforçando o comportamento que vimos no gráfico. O número de filmes sendo comparados também é justo, a base de 2016 tem ainda mais filmes que a base anterior, então podemos descartar uma distorção nos números por falta de dados.
+
