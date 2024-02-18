@@ -1,0 +1,373 @@
+---
+title: "The Mean"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(purrr)
+```
+
+Nos cursos anteriores aprendemos um fluxo de como coletar dados, entender sua estrutura, organizar de maneira a poder ilustrar e analisar esses dados.
+
+Nesse módulo vamos explorar a fundo maneiras de reduzir dados a um único valor que represente as características desse dado.
+Como por exemplo a média, mediana, moda e etc. 
+
+Além disso, vamos analisar a distribuição dos dados, pois um conjunto de dados [3,3,3,3] e [0,3,6,3] tem impactos diferentes e através do cálculo de desvio padrão, conseguimos avaliar essa distribuição.
+
+Pra começar vamos falar da média.
+
+
+## Média Aritmédia, ou apenas Média
+
+Imagine que gostaríamos de reduzir uma distribuição de números variados em uma única métrica que leve em consideração todos os números igualmente. Uma forma é somando todos eles e dividindo pela quantidade de números somados.
+
+```{r}
+lista <- c(0,1,4,7,8,10)
+
+0+1+4+7+8+10 # = 30
+30/6 #6 representa a quantidade de números somados 
+
+#resulta em 5 a média, podemos calcular diretamente através da função
+mean(lista)
+```
+Para esse exemplo, temos bons motivos para acreditar que a média foi representativa para a distribuição.
+
+- nosso menor valor é 0 e o maior 10, e a média 5 está bem no centro entre ambos.
+- se somarmos a distância dos valores que estão acima da média, contra os que estão abaixo da média, a distância é a mesma.
+- os valores estão próximos à média de forma justa, o 4 está a uma unidade da média, enquanto que os extremos 0 e 10 estão a 5 unidades de distâcia.
+
+
+Vamos olhar esse outro cenário
+
+```{r}
+lista  <-  c(0,2,3,3,3,4,13)
+
+# média 4, mas o meio entre 0 e 13 é 6.5, então não está centralizada
+media <- mean(lista) 
+media
+
+#conferindo se a distância dos valores acima e abaixo comparado a média são iguais
+
+valores_acima <- lista[lista > media]
+valores_abaixo <- lista[lista < media]
+
+distancia_acima <- valores_acima - media
+distancia_abaixo <- media - valores_abaixo
+
+#as ditâncias são iguais
+distancia_acima  %>% sum()
+distancia_abaixo %>% sum()
+
+```
+
+Outra forma de calcular as distâncias
+```{r}
+distancias <- lista - media
+distancias
+
+#a soma é zero pois são equivalentes
+sum(distancias)
+```
+
+Apesar do caso acima não ter a média centralizada, os valores existentes na lista tem a mesma distância até a média.
+São 9 unidades de distância de cada lado da média.
+
+Nós podemos dizer então que a média é um valor localizado num ponto da distribuição onde a soma das distância dos valores abaixo da média são as mesmas dos valores acima da média.
+
+Para ilustrar o comportamento da média, imagine uma balança parecida com uma gangorra com pesos em cada lado, a média é o ponto entre esses dois pesos que melhor equilibra a balança.  Se um lado tiver um peso muito maior que o outro, a média estará mais próxima desse peso para equilibrar. Se ambos pesos forem semelhantes, a média vai ser um ponto mais centralizado.
+
+![Balança/Gangorra](gangorra.jpg)
+ 
+### Geração de amostras para estressar o teste da média
+
+Vamos agora gerar amostras que vão nos apoiar no decorrer do exercício
+
+Já aprendemos em outro momento no curso sobre a função ```sample```.
+Agora vamos usar a função ```sample.int``` para gerar números aleatórios.
+É necessário informar qual o valor máximo que pode ser atingido, e o tamanho máximo da lista.
+
+```{r}
+set.seed(1) #conseguimos reproduzir o resultado dessa forma
+lista <- sample.int(n = 15, size = 7)
+lista
+```
+
+Se for de interesse criar uma matriz ou dataset com um conjunto de valores, podemos replicar esse código com a função ```replicate```
+
+```{r}
+matriz <- replicate(n=5, expr = sample.int(n = 15, size = 7))
+matriz
+```
+
+Vamos confirmar se de fato a soma das distâncias da média é sempre igual a zero.
+Com uma função vamos gerar uma amostra aleatória, calcular a média dessa amostra, calcular a distância de cada valor em relação a média, somar as distâncias e comparar se o resultado é zero.
+Se para todos os testes a soma for zero, o resultado é TRUE. Sendo assim no teste abaixo com 5000 repetições, teremos 5000 TRUEs, ou uma variável com resultado de 5000
+
+```{r}
+checkDist <- function(){
+  sample <- sample.int(n=1000,size=10)
+    mean <- mean(sample)
+    
+    distance <- sample - mean
+    round(sum(distance)) == 0
+}
+#Teste Função
+checkDist()
+
+#replicando o teste para ser executado 5 mil vezes
+sample <- sum(replicate(n=5000,expr = checkDist()))
+sample
+```
+### Fórmula matemática
+
+Para representar matematicamente as fórmulas da média aqui no código, podemos usufruir de funcionalidades do RMarkdown, para mais detalhes clique **[neste link](https://rpruim.github.io/s341/S19/from-class/MathinRmd.html)**
+
+A média de uma população pode ser representada da seguinte maneira, usando a letra grega abaixo com a pronúncia "miu".
+
+$$\mu = \frac{x_{1}+x_{2}+...x_{N}}{N}$$
+
+Então para uma população com os seguintes 7 valores [0,2,3,3,3,4,13], a representação ficaria assim:
+$$\mu = \frac{0+2+3+3+3+4+13}{7} = \frac{28}{7} = 4$$
+Agora quando queremos calcular a média para uma parte dessa população, em outras palavras, queremos calcular a média para uma amostra, temos que usar outra representação, nesse caso o "x barra", o n nesse caso fica minúsculo também.
+$$\overline{x} = \frac{x_{1}+x_{2}+...x_{n}}{n}$$
+
+Para uma amostra de 3 valores [2,3,4], essa seria a representação:
+$$\overline{x} = \frac{2+3+4}{3} = \frac{9}{3} = 3$$
+
+Existem variações dessas representações:
+
+|              | População    | Amostra
+ :-----------  | :----------: | :-------:
+  Média        | $\mu$        | $\overline{x}, \overline{x}_n, \overline{X}, M$
+  Qtde valores | $N$          | $n$
+  
+  
+Uma forma mais enxuta para representar o cálculo da média de uma população seria assim:
+$$\mu = \sum_{i=1}^{N} x_i$$
+
+Essa letra grega parecida com a letra E se chama sigma e ela representa a soma de uma sequência de números.
+É como se fosse uma estrutura de loop for, onde a cada iteração *i* vai assumir um número diferente da sequência.
+*i* = 1 define que a soma iniciará em 1 e irá incrementar 1 a cada iteração. E finalizará quando atingir *N*.
+Então para uma sequência de 3 números [2,4,6], a soma de $x_i$ vai começar em $x_1$ que é o primeiro número da sequência nesse caso o 2, e vai somar com o próximo $x_2$ que representa o 4, assim por diante até atingir *N* que nesse caso é 3, são 3 iterações.
+
+Podemos representar essas fórmulas com o seguinte código:
+
+```{r}
+populacao <- c(10, 5, 12)
+
+calcula_media  <- function(populacao){
+  N <- length(populacao)
+  soma_populacao = 0
+  for ( i in 1:N) {
+      soma_populacao <- soma_populacao + populacao[i]
+  }
+  
+  media <- soma_populacao / N
+}
+
+media <- calcula_media(populacao)
+media
+```
+Então recapitulando...
+Notação de como representar média da população passo a passo
+$$\mu = \frac{x_{1}+x_{2}+...x_{N}}{N} = \frac{\sum_{}X}{N} = \frac{\sum_{i=1}^{N} x_i}{N}$$
+
+Já a média da amostra
+$$\overline{x} = \frac{x_{1}+x_{2}+...x_{n}}{n} = \frac{\sum_{}X}{n} = \frac{\sum_{i=1}^{n} x_i}{n}$$
+
+
+## Calculando Média em grandes conjuntos de dados
+
+
+Agora vamos falar mais sobre a média usando dados reais, nessa base temos 2930 linhas com 82 colunas contendo informações de características de casas vendidas entre 2006 e 2010 na cidade Ames (estado de Iowa nos EUA).
+
+Esse foi um trabalho feito pelo professor [Dean DeCock](https://www.truman.edu/faculty-staff/decock/), publicado [neste artigo](https://doi.org/10.1080/10691898.2011.11889627) e os detalhes sobre as informações presentes na base estão [neste link](https://s3.amazonaws.com/dq-content/446/data_description.txt)
+
+
+O separador da base são tabs, é um arquivo do tipo TSV (tab-separated value), são basicamente espaços.
+Poderíamos usar a função read.csv e informar o parâmetro sep= "\\t" que funcionaria da mesma forma.
+
+```{r}
+base <- read_tsv("https://s3.amazonaws.com/dq-content/444/AmesHousing.txt")
+glimpse(base)
+```
+Agora vamos dizer que estamos interessados em entender a distribuição do preço de venda das casas, coluna SalePrice.
+Com a função summary já conseguimos ter uma boa noção do comportamento.
+
+```{r}
+base$SalePrice %>% summary(digits = 8)
+```
+
+Aqui já podemos ver que o menor valor de uma casa nessa base foi de \$12,789, enquanto que o maior valor atingiu \$755,00, já a média ficou em \$180,796.
+
+Para calcular apenas a média poderíamos usar a função mean
+
+```{r}
+base$SalePrice %>% mean()
+```
+
+Usando a função criada durante o exercício chegamos no mesmo resultado.
+```{r}
+media <- calcula_media(base$SalePrice)
+media
+```
+
+### Estimando a média da população com base na amostra
+
+Na maioria das vezes buscamos responder perguntas durante uma análise que diz respeito à população como um todo, porém muitas vezes trabalhamos apenas com uma parte dessa população, uma amostra. E o que podemos esperar é que calculando a média dessa amostra ela seja próxima à amostra da população.
+
+Nesse caso pode acontecer 3 situações.
+
+- de fato a média da amostra é igual à população ($\overline{x} = \mu$)
+- a média da amostra superestima a média da população  ($\overline{x} > \mu$)
+- a média da amostra subestima a média da população  ($\overline{x} < \mu$)
+
+Nos casos que a média da população vs amostra não são iguais, temos erros de amostragem.
+O erro de amostragem é uma diferença entre o parâmetro da população e a estatística da amostra.
+$\mu$ é o parâmetro e $\overline{x}$ é a estatística.
+
+Sendo assim o erro amostral é a diferença entre essas duas informações:
+
+$$sampling\ error = \mu - \overline{x}$$
+
+A ideia é sempre diminuir esse erro amostral, e tem 2 fatores que influenciam isso:
+
+- **a representatividade da amostra**: quanto mais representativo, quanto mais a amostra tiver características da população, menor o erro amostral
+- **o tamanho da amostra**: quanto maior o tamanho da amostra, mais chances de obter uma amostra representativa
+
+Vamos seguir assumindo que nossa base é a população completa com propósito de exercitar essa questão.
+E assim a partir dessa população vamos criar uma série de amostras e comparar num gráfico o comportamento dessa média.
+
+A ideia é tentar ilustrar como o tamanho da amostra afeta o comportamento da média, então vamos amostrar tamanhos diferentes começando em tamanhos bem pequenos até chegar no tamanho da população.
+
+```{r}
+parametro <-  mean(base$SalePrice)
+
+#vamos começar com amostras de 5 registros 
+#e ir incrementando de 29 em 29 até ter 100 tamanhos diferentes
+tamanho_amostras <- seq(5,by=29, length.out=100)
+tamanho_amostras
+
+#para cada amostra vamos calcular a média estatística 
+#e comparar com o parâmertro 
+#assim encontramos o erro amostral para cada amostra
+erros_amostrais <- map_dbl(tamanho_amostras, 
+                           ~ parametro - mean(sample(base$SalePrice,size=.)))
+erros_amostrais
+
+df <- tibble(x = tamanho_amostras,
+             y = erros_amostrais)
+df
+#vamos criar um scatter plot, um gráfico de pontos, 
+#onde cada ponto representa o erro amostral daquela amostra
+# no eixo x vamos ver a evolução desse erro amostral do menor tamanho de amostra
+#até chegar no maior tamanho que mais se aproxima da população original
+#vamos criar uma linha no eixo x que representa o tamanho da população como base
+# e no eixo y vamos deixar uma linha no valor 0 que 
+#seria a amostra "perfeita" sem erros
+df %>%
+  ggplot(aes(x = tamanho_amostras,y = erros_amostrais))+
+  geom_point(size=2)+
+  geom_hline(yintercept=0)+
+  geom_vline(xintercept=2930)+
+  labs(x = "Tamanhos das amostras",
+       y = "Erros amostrais")
+```
+Com o gráfico acima conseguimos evidenciar como o tamanho da amostra influencia diretamente na representatividade da amostra, e quanto mais representativa menor o erro amostral, pois é muito próximo das características originais da população.
+Há sim exceções, vemos no gráfico de alguns casos de amostras com tamanhos menores que conseguem um bom resultado no erro amostral.
+
+Então o quanto podemos confiar em amostra pequenas? Quais as chances de amostras pequenas acertarem a média da população?
+Podemos fazer um teste apenas com amostras pequenas e jogar o resultado num histograma.
+
+```{r}
+set.seed(1)
+library(scales)
+
+media_amostras <- replicate(n=10000,
+                            expr = sample(base$SalePrice,3) %>% mean) %>% tibble()
+media_amostras %>% head()
+
+media_amostras %>% 
+  ggplot(aes(x=.))+
+  geom_histogram(bins = 10, position = "identity", alpha=0.5) +
+  geom_vline(aes(xintercept = mean(base$SalePrice))) +
+  scale_x_continuous(labels = comma, lim=c(0, 500000))+
+  scale_y_continuous(labels = comma, lim=c(0, 5500))+
+  xlab("Média")+
+  ylab("Qtde Amostras")
+```
+
+Com o resultado do gráfico acima, é possível notar que mesmo selecionando uma amostra muito pequena, com 3 registros, das 10000 amostras criadas, a grande maioria fica com um resultado próximo à média da população.
+
+
+Aumentando a quantidade de registros em cada amostra para 100 por exemplo, o resultado fica ainda melhor.
+
+
+```{r}
+set.seed(1)
+library(scales)
+
+media_amostras <- replicate(n=10000,
+                            expr = sample(base$SalePrice,100) %>% mean) %>% tibble()
+media_amostras %>% head()
+
+media_amostras %>% 
+  ggplot(aes(x=.))+
+  geom_histogram(bins = 100, position = "identity", alpha=0.5) +
+  geom_vline(aes(xintercept = mean(base$SalePrice))) +
+  scale_x_continuous(labels = comma, lim=c(0, 500000))+
+  scale_y_continuous(labels = comma, lim=c(0, 2500))+
+  xlab("Média")+
+  ylab("Qtde Amostras")
+```
+
+
+
+
+## A Média das amostras usada como indicador de viés
+
+Se a gente gerar todas as possibilidades de amostra que uma população permite, calcular a média dessas amostras, e calcular a média dessas médias, vamos observar que o resultado é igual à média da população.
+
+Para exemplificar, vamos criar um exemplo super simples, uma população de 3 valores e amostras de 2 valores.
+
+População : [3,7,2]
+
+```{r}
+populacao  <-  c(3, 7, 2)
+
+amostras <- list(c(3,7),
+                c(3,2),
+                c(7,2),
+                c(7,3),
+                c(2,3),
+                c(2,7))
+
+media_amostras <- map_dbl(amostras, function(x) mean(x))
+
+media_populacao<- mean(populacao)
+media_populacao
+                        
+media_da_media_amostras <- mean(media_amostras)
+media_da_media_amostras
+                        
+sem_vies <- (media_populacao == media_da_media_amostras)
+
+sem_vies
+```
+
+
+
+
+
