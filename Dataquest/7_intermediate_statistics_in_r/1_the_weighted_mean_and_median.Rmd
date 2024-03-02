@@ -1,0 +1,261 @@
+---
+title: "The Weighted Mean and the Median"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(purrr)
+```
+
+No exercício passado aprendemos sobre a média aritmética, e seu comportamento dependendo do tamanho/representatividade da amostra em relação à população. Aqui vamos expandir os horizontes da Estatítica e abordar a média ponderada e mediana.
+
+## Base Casas Vendidas em Ames entre 2006 e 2010
+
+
+Vamos usar essa base com 2930 linhas com 82 colunas contendo informações de características de casas vendidas entre 2006 e 2010 na cidade Ames (estado de Iowa nos EUA).
+
+Esse foi um trabalho feito pelo professor [Dean DeCock](https://www.truman.edu/faculty-staff/decock/), publicado [neste artigo](https://doi.org/10.1080/10691898.2011.11889627) e os detalhes sobre as informações presentes na base estão [neste link](https://s3.amazonaws.com/dq-content/446/data_description.txt)
+
+
+O separador da base são tabs, é um arquivo do tipo TSV (tab-separated value), são basicamente espaços.
+Poderíamos usar a função read.csv e informar o parâmetro sep= "\\t" que funcionaria da mesma forma.
+
+```{r}
+base <- read_tsv("https://s3.amazonaws.com/dq-content/444/AmesHousing.txt")
+glimpse(base)
+```
+Agora vamos dizer que estamos interessados em entender a distribuição do preço de venda das casas, coluna SalePrice.
+Com a função summary já conseguimos ter uma boa noção do comportamento.
+
+```{r}
+base$SalePrice %>% summary(digits = 8)
+```
+Vamos imaginar que ao invés do dataset acima, nós temos dados summarizados por ano
+
+```{r}
+base_consolidada <- base %>% 
+  group_by(`Yr Sold`) %>% 
+  summarise(MediaPreco = mean(SalePrice),
+            CasasVendidas = n()) %>% 
+  arrange(CasasVendidas)
+
+base_consolidada
+```
+
+Nosso objetivo é calcular a média, vamos calcular a média do preço médio calculado na base consolidada e comparar se chegamos no mesmo resultado da coluna SalePrice original.
+
+```{r}
+mean(base_consolidada$MediaPreco)
+```
+A média de fato ficou diferente, e isso se dá pois a média foi calculada separadamente para cada ano, e a quantidade de casas em cada ano é diferente colocando um peso diferente na média.
+No entanto o cálculo fica errado, pois estamos somando os 5 preços médios e dividindo por 5, em outras palavras estamos nesse cálculo dando peso igual para os 5 preços, sendo que cada ano tem quantidades diferentes de casas vendidas.
+
+Uma forma de corrigir isso, imaginando que só tivéssemos a base consolidada para trabalhar, é multiplicar os preços médios pela quantidade de casas, somar os preços e dividir pela quantidade de casas.
+
+
+```{r}
+base_consolidada <- base_consolidada %>% 
+  mutate(resultado = MediaPreco * CasasVendidas)
+
+media_consolidada <- sum(base_consolidada$resultado) / 
+                     sum(base_consolidada$CasasVendidas)
+media_consolidada
+
+media <- mean(base$SalePrice)
+media
+```
+Agora sim chegamos na mesma média que calculamos inicialmente, pois levamos em consideração o peso de cada valor.
+
+
+## Média Ponderada (com pesos)
+
+Em situações vamos usar ou não a média ponderada?
+
+Quando temos uma base sem agregação, sem agrupamento, onde cada linha representa um caso único, seja ele único na base ou até se repetindo em outras linhas, podemos usar a média aritmética, pois o peso de cada linha é um.
+
+Agora quando na base cada linha representa um grupo, tem um campo com quantidade ou probabilidade em que aquele evento acontece, nesse caso precisamos da média ponderada para levar o peso correto em consideração no cálculo.
+
+Vamos representar isso através de uma fórmula.
+
+Basicamente o que fizemos é pegar o preço *x* e multiplicar pelo peso *w*, e repetimos isso para cada valor da base, então *x1* multiplicado por *w1*, *x2* por *w2*, *x3w3* e assim por diante. O importante é ter a mesma quantidade de *x* e *w*.
+
+
+$$weighted\ mean = \frac{x_{1}w_{1}+x_{2}w_{2}+...x_{n}w_{n}}{w_{1}+w_{2}+w_{n}}$$
+De forma simplificada:
+
+$$weighted\ mean = \frac{\sum_{i=1}^{n} x_iw_i}{\sum_{i=1}^{n} w_{i}}$$
+
+
+## Namespaces
+
+Fazendo um rápido parênteses antes de seguir no assunto da Média, você sabe o que são os namespaces?
+
+É basicamente uma forma que o R permite de identificar melhor as funções pelo nome.
+É comum existir mais de uma função em pacotes diferentes, porém com o mesmo nome.
+Sendo assim usando namespace conseguimos definir com mais precisão de qual pacote queremos usar.
+Também pode ser o caso se usarmos apenas uma função de um pacote sem a necessidade de carregar na memória do R o pacote inteiro, e nesse caso o namespace ajuda carregando apenas a função em específico na memória.
+
+Como funciona o namespace? Basta seguir o seguinte padrão:
+
+```nome_do_pacote::nome_da_funcao(parametros)```
+
+Por exemplo o código abaixo:
+
+```{r}
+stringr::str_c("Hello", "World")
+```
+ 
+Também daria para carregar o pacote por completo
+```{r}
+library(stringr)
+
+str_c("Hello", "World")
+```
+
+E mesmo carregando a biblioteca inteira, pode ser interessante usar o namespace para evitar ambiguidade no código.
+
+
+## Mediana
+
+Nós vimos até aqui situações onde é possível calcular a média, apesar de o cálculo sair errado (e a média ponderada foi a solução). Mas e quando não é nem possível realizar um cálculo?
+
+Falando ainda de casas, vamos imaginar que na base existisse um campo com a quantidade de cômodos nessa situação:
+
+```{r}
+comodos <- c(5,1,2,"10 ou mais", 4, 5,2)
+```
+
+Não é possível calcular a média pois o dado "10 ou mais" é um texto e representa um valor que pode variar, podendo ser o próprio 10, ou 11, 12 e assim por diante. Chamamos isso de distribuição aberta, pois o limite não é bem definido.
+
+Nesse caso poderíamos considerar a mediana.
+Basicamente precisamos ordenar os valores e considerar o valor do meio.
+
+```{r}
+comodos <- c(1,2,2,4,5,5,"10 ou mais")
+```
+
+O resultado seria 4 para esse caso. e a quantidade de posições abaixo e acima desse valor são iguais, 3 para cada lado.
+
+E quando a amostra tem uma quantidade par de valores, o caso acima tinha 7 (ímpar) e foi fácil encontrar o meio.
+
+Se a amostra acima tivesse 6 posições, por exemplo, pegamos as 2 posições do meio e calculamos a média para saber o resultado.
+
+```{r}
+comodos <- c(1,2,2,4,5,"10 ou mais")
+#meio possui 2 e 4, então soma e divide pelas 2 posições
+(2+4)/2
+```
+
+Nesse segundo cenário o resultado é 3.
+É comum em inglês utilizar o termo *average*, e muitas vezes se confunde com o termo *mean*, mas *average* diz respeito a o valor estatístico mais representativo da amostra, que pode ser média como pode ser mediana ou moda dependendo do contexto. 
+
+
+Para a média vimos símbolos utilizados para representar essas métricas, já para mediana, costumam usar o próprio nome, não existe um consenso de um símbolo.
+
+
+Agora vamos ilustrar como ficaria o exemplo acima via código.
+
+```{r}
+comodos <- c(5,1,2,"10 ou mais", 4,2)
+
+comodos_ajustado <- stringr::str_replace(comodos, "10 ou mais", "10") %>% 
+  as.numeric() %>% sort()
+comodos_ajustado
+
+indice_meio <- c(length(comodos_ajustado)/2,
+                 (length(comodos_ajustado)/2)+1)
+
+mediana <- mean(comodos_ajustado[indice_meio])
+mediana
+```
+
+Agora comparando a mediana com a média, a média considera um peso igualmente distribuído em todos valores da amostra. Enquanto que a mediana olha apenas os valores do meio. Isso significa que a média resiste muito mais à mudanças de valores comparado à média. Por exemplo se o maior valor da amostra acima fosse 1000 ao invés de 10, isso mudaria significativamente a média, enquanto que a mediana permaneceria a mesma.
+
+
+Tendo isso em mente, é uma medida estatística muito boa para ser utilizada em bases onde temos conhecimento da existência de outliers que distorceria o cálculo da média. Um bom exemplo é o cálculo da média da renda de uma população. Sabemos que a maior parte dos brasileiros recebem poucos salários mínimos, mas temos uma minúscula parcela de super ricos com renda na casa de bilhões, que distorceriam completamente o resultado da média.
+
+Para simplificar veja o exemplo abaixo.
+A mediana ficou em 5k, enquanto que a média foi muito influenciada pelo valor de 100k ficando em 23.020 reais.
+
+```{r}
+df <- tibble::tibble(empregado = purrr::map_chr(1:5, 
+                                 function(x) stringr::str_c("empregado ", x)),
+                     salario = c(1300,1300,5000,7500,100000))
+
+mean(df$salario)
+median(df$salario)
+
+library(ggplot2)
+
+df %>% 
+  ggplot(aes(x = empregado, y = salario)) +
+    geom_bar(stat = "identity", 
+             fill = "blue") +
+    geom_hline(aes(yintercept = mean(df$salario),
+                   color = "black"), 
+               size = 1) +
+    geom_hline(aes(yintercept = median(df$salario), 
+                    color = "red"), 
+               size = 1) +
+    scale_y_continuous(labels = scales::comma) +
+    scale_colour_manual(values = c("black", "red"), 
+                        name = "", 
+                        labels = c("Média", "Mediana")) +
+    theme_bw() + theme(axis.text.x = element_text(angle = 90)) + 
+    xlab("") + 
+    ylab("Salários")
+```
+
+## Identificando outliers com boxplot
+
+
+Vamos agora utilizar o mesmo exemplo do gráfico de barras para construir um boxplot e observar o comportamento
+
+```{r}
+df <- tibble::tibble(empregado = purrr::map_chr(1:5, 
+                                 function(x) stringr::str_c("empregado ", x)),
+                     salario = c(1300,1300,5000,7500,100000))
+
+mean(df$salario)
+median(df$salario)
+
+library(ggplot2)
+
+df %>% 
+  ggplot(aes(y = salario)) +
+    geom_boxplot()+
+    scale_y_continuous(labels = scales::comma) +
+    theme_bw() +
+    ylab("") + 
+    xlab("Salários")
+```
+
+
+
+Até aqui mostramos o quanto a média pode não ser o melhor valor mais representativo da amostra.
+Mas em qual caso ela é? Vejamos o seguinte gráfico que traz uma "nota" das condições do imóvel de 1 a 9
+
+A média é 5.56 enquanto que a mediana é 5. Mas pelo histograma vemos uma concentração muito maior para notas maiores que 5, então a média nesse caso representa mais as características dessa amostra.
+
+Mas vale ressaltar que nesse exemplo estamos falando de uma informação ordinal, e a nota vai de 1 a 9 mas poderia ser de 1 a 100, e não temos o valor exato da distância de uma nota para outra, e a interpretação do resultado pode levar a problemas teóricos.
+
+```{r}
+base$`Overall Cond` %>% summary()
+
+base %>% 
+  ggplot(aes(x=`Overall Cond`))+
+       geom_histogram(bins=10)
+```
+
