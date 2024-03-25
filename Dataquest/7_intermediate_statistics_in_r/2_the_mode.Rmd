@@ -1,0 +1,161 @@
+---
+title: "The Mode"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(purrr)
+library(tibble)
+```
+
+No exercício passado aprendemos sobre a média ponderada e mediana. Aqui vamos nos aprofundar na medida estatística conhecida como Moda.
+
+## Base Casas Vendidas em Ames entre 2006 e 2010
+
+
+Vamos usar essa base com 2930 linhas com 82 colunas contendo informações de características de casas vendidas entre 2006 e 2010 na cidade Ames (estado de Iowa nos EUA).
+
+Esse foi um trabalho feito pelo professor [Dean DeCock](https://www.truman.edu/faculty-staff/decock/), publicado [neste artigo](https://doi.org/10.1080/10691898.2011.11889627) e os detalhes sobre as informações presentes na base estão [neste link](https://s3.amazonaws.com/dq-content/446/data_description.txt)
+
+
+O separador da base são tabs, é um arquivo do tipo TSV (tab-separated value), são basicamente espaços.
+Poderíamos usar a função read.csv e informar o parâmetro sep= "\\t" que funcionaria da mesma forma.
+
+```{r}
+base <- read_tsv("https://s3.amazonaws.com/dq-content/444/AmesHousing.txt")
+glimpse(base)
+```
+Em que situações vamos querer computar a Moda, ou até mesmo em que situações a Média e Mediana não poderão ser calculadas.
+
+Vamos olhar a informação abaixo.
+Ela classifica o declive do terreno do imóvel entre baixo, moderado e severo.
+
+```{r}
+base$`Land Slope` %>% unique()
+base %>% nrow()
+```
+
+Estamos lidando com uma informação que é matematicamente impossível de calcular a média.
+Ainda que a informação passe uma ordem de grandeza, a medida se dá em palavras e não em números, não podendo calcular a mediana.
+Se a base tivesse uma quantidade ímpar de linhas, poderíamos ordenar do declive mais baixo até o mais severo e selecionar a linha do meio.
+Mas sendo par deveríamos tirar a média das duas posições do meio, e novamente não daria para calcular média visto que não temos números.
+
+Nesse caso a Moda é bastante útil, pois através dela podemos descobrir o valor que mais se repete na base.
+Aqui seria "Gtl", o nível de declive mais baixo.
+
+```{r}
+base$`Land Slope` %>% table()
+```
+
+O R infelizmente não tem em suas funções base nenhuma função que calcule a moda e portanto vamos criar nossa própria função.
+E com a função chegamos no mesmo resultado acima que manualmente olhamos e percebemos o valor que mais se repetia na base.
+
+```{r}
+
+calcular_moda <- function(vetor){
+    vetor <- tibble(vetor)
+    
+    vetor %>%
+    group_by(vetor) %>%
+    summarise(registros = n()) %>%
+    arrange(desc(registros)) %>%
+    filter(row_number() == 1) %>%
+    pull(vetor)
+}
+
+calcular_moda(base$`Land Slope`)
+```
+
+A moda foi uma medida estatística que nos ajudou a analisar uma informação ordinal porém em formato de texto. Se tratava de uma informação que apesar de ser texto representava uma ordem de grandeza.
+Indo um pouco além, a moda pode contribuir em  análises de uma informação em texto que não represente uma grandeza, onde cada valor tem simplesmente um signifcado diferente, nem melhor ou pior, nem maior ou menor que o outro.
+
+Essa informação determina o estilo do telhado do imóvel.
+
+```{r}
+base %>% 
+    group_by(`Roof Style`) %>% 
+    summarise(registros = n())%>% 
+    arrange(desc(registros))
+
+calcular_moda(base$`Roof Style`)
+```
+
+
+Outra situação é quando a informação permite matematicamente falando calcular a média ou a mediana, estamos lidando com números, no entanto não deveríamos efetuar esses cálculos. Há situações onde os números representam categorias, e a média entre uma categoria entre 1 e 2 ser 1,5 não diz muita coisa.
+
+A informação abaixo informa quantas cozinhas a casa tem, imagine que gostaríamos de saber quantas cozinhas é mais comum encontrar numa casa típica, então 1,5 cozinha seria uma informação sem sentido.
+
+Lembrando aqui que num primeiro momento parece ser possível calcular a mediana, mas caímos de novo no problema de termos registros pares e precisar tirar a média dos 2 valores do meio, podendo novamente resultar num número com casas decimais.
+
+Sendo assim a moda acaba sendo a escolha mais sensata.
+
+```{r}
+base %>% 
+    group_by(`Kitchen AbvGr`) %>% 
+    summarise(registros = n())
+
+calcular_moda(base$`Kitchen AbvGr`)
+```
+
+Pode acontecer de 2 resultados terem a mesma frequência de aparições na base, e nesse caso a moda seria bimodal, ou seja duas modas Pode acontecer casos com mais de 2 e a informação seria multimodal.
+Agora se todos os valores da base se repetem na mesma frequência, aí nesse caso não teríamos nenhuma moda, pois nenhum valor aparece mais vezes que os demais.
+
+No caso de uma informação contínua, principalmente com valores decimais, pode ser mais difícil ocorrer essa repetição, e mesmo se ocorrer pode não ter uma quantidade significante para considerarmos essa moda.
+
+
+Agora num histograma, usando um valor contínuo como SalePrice, em que posição ficaria a moda, média e mediana?
+Numa curva assimétrica notamos que a média sempre será puxada para o lado da cauda demonstrando o quando ela é afetada por valores muito discrepantes. A moda sempre fica no pico e a mediana no meio das duas medidas.
+
+```{r}
+base %>% 
+ggplot(aes(x = SalePrice)) +
+    geom_density(alpha = 0.1, 
+                 color='blue', 
+                 fill='blue') +
+    geom_vline(aes(xintercept = 150000, 
+                   color = 'Mode'), 
+               size = 1.2 ) +
+    geom_vline(aes(xintercept = median(SalePrice), 
+                   color = 'Median'), 
+               size = 1.2 ) +
+    geom_vline(aes(xintercept = mean(SalePrice), 
+                   color = 'Mean'), 
+               size = 1.2 ) +
+    scale_y_continuous(labels = scales::comma) +
+    scale_x_continuous(labels = scales::comma, 
+                       lim = c(min(base$SalePrice), 
+                       max(base$SalePrice))) +
+    scale_colour_manual(values = c("Mode" = "green", 
+                                   "Median" = "black", 
+                                   "Mean" = "orange"), 
+                        name = "") +
+    theme_bw() + 
+    theme(legend.position='top') +
+    xlab("Sale Price") + 
+    ylab("Density")
+```
+
+Vale mencionar, que para uma distribuição normal, ou seja um histograma que é simétrico e centralizado, a média, moda e mediana vão estar centralizadas. 
+A não ser que o caso seja uma curva simétrica com 2 picos, nesse caso a moda vai estar localizada no meio de cada um dos 2 picos, enquanto que a média e mediana estarão centralizadas no gráfico.
+Para distribuições uniformes, não teremos moda, uma vez que não existe picos e todos valores se repetem na mesma frequência.
+
+
+
+
+
+
+
+
+
