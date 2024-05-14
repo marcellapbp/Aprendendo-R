@@ -1,0 +1,340 @@
+---
+title: "Measures of Variability"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(purrr)
+library(tibble)
+options(scipen=999)
+```
+
+Nos últimos 3 exercícios focamos em calcular informações que nos ajudam a sumarizar a base em um único resultado, nos ajudando a entender a amostra/população, pois dependendo do volume de dados é humanamente impossível.
+
+Durante esse estudo percebemos podem existir bases com valores muitos distintos resultando numa mesma média, ou seja existem casos com valores que giram em torno da média, ou que estão em extremos opostos muito discrepantes.
+
+Então que tal a gente justamente buscar formas de avaliar como é o comportamento dessa distribuição das informações presentes na base?
+
+## Base Casas Vendidas em Ames entre 2006 e 2010
+
+
+Vamos usar essa base com 2930 linhas com 82 colunas contendo informações de características de casas vendidas entre 2006 e 2010 na cidade Ames (estado de Iowa nos EUA).
+
+Esse foi um trabalho feito pelo professor [Dean DeCock](https://www.truman.edu/faculty-staff/decock/), publicado [neste artigo](https://doi.org/10.1080/10691898.2011.11889627) e os detalhes sobre as informações presentes na base estão [neste link](https://s3.amazonaws.com/dq-content/446/data_description.txt)
+
+
+O separador da base são tabs, é um arquivo do tipo TSV (tab-separated value), são basicamente espaços.
+Poderíamos usar a função read.csv e informar o parâmetro sep= "\\t" que funcionaria da mesma forma.
+
+```{r}
+base <- read_tsv("https://s3.amazonaws.com/dq-content/444/AmesHousing.txt")
+glimpse(base)
+```
+
+## Range (Intervalo)
+
+Comparando duas sequências de valores A=[4,4,4,4] e B=[0,8,0,8], A não varia e portanto o cálculo que representa essa variação deveria ser 0, enquanto que B varia, mas como calcular o quanto varia?
+
+A média, moda e mediana não nos ajuda nesse caso, pois resulta em 4 para ambos casos, exceto a moda que é para o B não existe visto que 0 e 8 se repetem a mesma quantidade de vezes.
+
+
+Sendo assim uma forma de medir a variedade é encontrando a diferença entre o valor mínimo e máximo.
+$$max(A) - min(A) = 4 - 4 = 0$$
+
+Então para a base A: 4 - 4 = 0, e para a base B: 8 - 0 = 8.
+
+```{r}
+intervalo_preco <- base %>% 
+group_by(`Yr Sold`) %>%
+summarize(intervalo_por_ano = max(SalePrice) - min(SalePrice))
+
+intervalo_preco
+```
+
+O grande problema desse método é levar apenas em consideração o valor mínimo e máximo, ignorando os demais valores da base.
+
+Nesse exemplo C=[1,1,1,1,1,1,1,1,21] o resultado é 20, mas não parece levar em consideração a quantidade de valores que não variam. Esse método é muito sensível à outliers.
+
+
+## Average Distance (Distância Média)
+
+Uma forma de considerar todos os valores na hora de calcular a variabilidade de uma base e assim ter um resultado que represente melhor essa variação é com a distância média.
+
+Aqui escolhemos um valor de referência, por exemplo a média da base e somamos a distância de todos valores presentes nessa base em relação à média, por último dividindo pelo número de ocorrências. Em outras palavras estamos calculando a distância média dos pontos em relação à media.
+
+$$average\ distance = \frac{(x_{1} -\mu)+(x_{2} -\mu)+...(x_{N} -\mu)}{N} = \frac{\sum_{i=1}^{n} (x_i - \mu)}{N}$$
+
+```{r}
+C  <-  c(1,1,1,1,1,1,1,1,1,21)
+
+distancia_media <- function(vetor){
+    media <- mean(vetor)
+    distancias <- vetor - media
+    
+    mean(distancias)
+}
+
+distancia_media(C)
+
+```
+
+O resultado acima calculou que a média do vetor C é 3, então 1-3=-2, e como o número 1 se repete 9 vezes, acaba resultando em -18. Enquanto que o último número do vetor resulta em 21-2=18. Então os resultados se anulam resultando em zero, o que não parece representar muito bem o que aconteceu, afinal ocorreu algum grau de variação.
+
+
+## Mean Absolute Deviation (Desvio Absoluto Médio)
+
+Pensando em resolver esse problema podemos pegar o valor absoluto usando o módulo, pois este retornará o valor positivo evitando que os valores se anulem.
+
+$$mean\ absolute\ distance = \frac{|x_{1} -\mu|+|x_{2} -\mu|+...|x_{N} -\mu|}{N} = \frac{\sum_{i=1}^{n} |x_i - \mu|}{N}$$
+
+$$|-7| = +7$$
+$$|+7| = +7$$
+Esse cálculo se chama desvio absoluto médio (Mean Absolute Deviation), usamos a palavra desvio (deviation) quando nos referimos estatiticamente à distância da média.
+
+Repetindo o cálculo para o Vetor chegamos num valor maior que zero (que nos faz entender que teve variação), no entanto muito menor que 20 comparado ao primeiro cálculo 
+```{r}
+C  <-  c(1,1,1,1,1,1,1,1,1,21)
+
+desvio_absoluto_medio <- function(vetor) {
+    media <- mean(vetor)
+    distancias  <-  vetor - media
+    abs_dev <- abs(distancias)
+    mean(abs_dev)
+}
+
+desvio_absoluto_medio(C)
+```
+## Variance (Variância)
+
+A Variância, também conhecida por Desvio Quadrático Médio (Mean Squared Deviation), traz uma segunda alternativa para resolver o problema com o cálculo da Distância Média. Aqui ao invés de somar o valor absoluto das distâncias, somamos o valor quadrado das distâncias, cálculo esse que por natureza já remove os sinais negativos assim evitando que os valores se anulem.
+
+$$variance = \frac{(x_{1} -\mu)^2+(x_{2} -\mu)^2+...(x_{N} -\mu)^2}{N} = \frac{\sum_{i=1}^{n} (x_i - \mu)^2}{N}$$
+
+
+```{r}
+C  <-  c(1,1,1,1,1,1,1,1,1,21)
+
+variancia <- function(vetor) {
+  media <- mean(vetor)  
+  distancias  <-  (vetor - media)
+    dist_quad <- distancias**2
+    mean(dist_quad)
+}
+
+variancia(C)
+```
+
+No entanto o valor ficou muito maior do que esperado, pior que o primeiro cálculo que resultou em 20.
+
+
+## Standard Deviation (Desvio Padrão)
+
+Uma forma de solucionar o problema que a variância apresenta é extrair a raíz quadrada do resultado, assim chegando num valor que represente uma escala mais próxima da realidade e mais fácil de interpretar.
+
+
+$$standard\ deviation = \sqrt\frac{(x_{1} -\mu)^2+(x_{2} -\mu)^2+...(x_{N} -\mu)^2}{N} = \sqrt\frac{\sum_{i=1}^{n} (x_i - \mu)^2}{N}$$
+Em outras palavras o desvio padrão é a extração da raíz quadrada da variância
+$$standard\ deviation = \sqrt variance$$
+
+
+```{r}
+std_dev <- function(vetor) {
+    media <- mean(vetor)
+    distancias  <-  (vetor - media)
+    squared_dist <- distancias**2
+    sqrt(mean(squared_dist))
+}
+
+std_dev(C)
+```
+Vamos entender melhor como interpretar esse resultado olhando o Preço das Casas na base.
+
+```{r}
+std_dev(base$SalePrice)
+mean(base$SalePrice)
+```
+
+Esse resultado nos mostra que o preço médio das casas giram em torno de 180 mil, mas não significa que a maioria delas ou cada uma delas custam esse valor. Uma casa poderia custar 120 e outra 240 mil, e até mesmo nenhuma casa ter o valor exato da média.
+
+Com o desvio padrão temos uma noção melhor dessa variação, o resultado aproximado de 79 mil informa que a maioria das casas giram em torno de 79 mil abaixo ou acima da média. Vamos tentar visualizar isso num gráfico:
+
+```{r}
+library(ggplot2)
+
+media <- mean(base$SalePrice)
+desvio_padrao <- std_dev(base$SalePrice)
+
+ggplot(data = base, aes(x = SalePrice)) +
+    geom_histogram(bins = 10, 
+        position = "identity", 
+        alpha = 0.5, 
+        fill='blue') +
+    geom_vline(aes(xintercept = media, 
+                    color = 'black'), 
+                size = 1.2 ) +
+    geom_vline(aes(xintercept = media - desvio_padrao, 
+                    color = 'red'), 
+                size = 1.2 ) +
+    geom_vline(aes(xintercept = media + desvio_padrao, 
+                    color = 'violet'), 
+                size = 1.2 ) +
+    scale_x_continuous(labels = scales::comma) +
+    scale_colour_manual(values = c("black", "red", "violet"), 
+                        name = "", 
+                        labels = c("Média", "Abaixo", "Acima")) +
+    theme_bw() + 
+    theme(legend.position='top') +
+    xlab("Preço de Venda") + 
+    ylab("Frequência")
+```
+
+No gráfico vemos que os valores não param necessariamente entre 101 e 259 mil (1 desvio padrão abaixo ou acima da média), esses valores só indicam onde a maior parte das ocorrências se concentram, mas ainda assim podem existir outliers.
+
+## Dispersão dos dados
+
+Vamos comparar o comportamento do desvio padrão em amostras aleatórias, propositalmente pequenas para notarmos as diferenças.
+
+```{r}
+set.seed(2)
+amostras  <-  purrr::map(1:4, function(x) sample_n(base, size = 50))
+dp_amostras <- purrr::map(1:4, function(i) std_dev(amostras[[i]]$SalePrice))
+dp_amostras
+```
+
+```{r}
+amostras_consolidado <- bind_rows(amostras, .id="No_Amostra")
+
+ggplot(data = amostras_consolidado, aes(x = SalePrice)) +
+    geom_histogram(bins = 10, 
+        position = "identity", 
+        alpha = 0.5, 
+        fill='blue')+
+  facet_wrap(vars(No_Amostra))
+```
+
+
+Normalmente queremos tomar decisões sobre uma população inferindo a partir de uma amostra, mas o quanto o resultado baseado numa amostra é confiável?
+
+Até o momento apresentamos a fórmula, com base na população, a representação matemática fica levemente diferente quando falamos em amostras, o símbolo da média e da quantidade de ocorrências muda:
+
+$$standard\ deviation = \sqrt\frac{(x_{1} -\bar x)^2+(x_{2} -\bar x)^2+...(x_{n} -\bar x)^2}{n} = \sqrt\frac{\sum_{i=1}^{n} (x_i - \bar x)^2}{n}$$
+Vamos criar repetidas amostras e calcular o desvio padrão de cada uma delas e plotar num histograma para observar o quanto essa informação muda dependendo da amostra comparado ao desvio padrão da população.
+
+```{r}
+set.seed(2)
+std_points <- replicate(n = 5000, 
+                        expr=std_dev(sample(x=base$SalePrice, size=10)))
+
+std_points_tibble <- tibble::tibble(std_points)
+
+ggplot(data=std_points_tibble, aes(std_points))+
+geom_histogram(bins=10, position="identity")+
+geom_vline(aes(xintercept=std_dev(base$SalePrice)))+
+xlab("Amostra de Desvio Padrão")+
+ylab("Frequência")
+```
+
+
+Notamos que em média o desvio padrão da amostra subestima o desvio padrão da população, em outras palavras, o **desvio padrão da amostra** normalmente será menor do que o **desvio padrão da população**. Vamos entender por que isso acontece e como corrigir.
+
+## Correção de Bessel
+
+Abaixo veja a distribuição da base completa com 2930 linhas categorizado como No_Amostra 1, e as demais (2,3,4,5) são amostras de 500 linhas extraídas da base completa aleatoriamente.
+
+A primeira coisa que temos que notar, que já de cara explica por que o desvio padrão da amostra é sempre menor que da população, é que a amostra nunca ultrapassa os limites da população. No desenho do gráfico as barras estão sempre contidas dentro da imagem da base completa, porém como possui um volume menor a concentração dos dados vão ser mais estreitos. A probabilidade de uma amostra conseguir captar um registro pelo menos de cada variação de preço para representar toda a dispersão de 0 a 800 mil no preço da casa é muito raro.
+
+
+```{r}
+amostras  <-  purrr::map(1:4, function(x) sample_n(base, size = 500))
+amostras_consolidado <- bind_rows(base, 
+                                  amostras, 
+                                  .id="No_Amostra")
+
+ggplot(data = amostras_consolidado, aes(x = SalePrice, fill= No_Amostra)) +
+    geom_histogram(bins=15, alpha = 0.7)
+```
+
+
+Ainda assim existe uma forma de corrigir a fórmula do desvio padrão a fim de tentar captar um valor que represente melhor o comportamento da população. Fazemos isso diminuindo em 1 o valor do denominador, assim na divisão da fórmula vai aumentar o valor do resultado final.
+
+
+$$standard\ deviation = \sqrt\frac{(x_{1} -\bar x)^2+(x_{2} -\bar x)^2+...(x_{n} -\bar x)^2}{n-1} = \sqrt\frac{\sum_{i=1}^{n} (x_i - \bar x)^2}{n-1}$$
+
+Vamos ajustar nossa função:
+
+```{r}
+std_dev_bessel <- function(vetor) {
+    distancias  <-  (vetor - mean(vetor))
+    squared_dist <- distancias**2
+    sqrt(sum(squared_dist)/(length(squared_dist)-1))
+}
+```
+
+
+E agora o resultado do antes da correção (1) e depois (2).
+Notamos uma ligeira mudança, um deslocamento da concentração dos dados nas barras mais à direita, ou seja os valores do desvio padrão aumentaram um pouco.
+
+```{r}
+set.seed(1)
+std_points <- replicate(n = 5000, 
+                        expr=std_dev(sample(x=base$SalePrice, size=10)))
+std_points_tibble <- tibble::tibble(std_points)
+
+std_points_bessel <- replicate(n = 5000, 
+                               expr=std_dev_bessel(sample(x=base$SalePrice, size=10)))
+std_points_bessel_tibble <- tibble::tibble(std_points_bessel) %>% 
+  rename("std_points" = "std_points_bessel")
+
+std_points_tibble_full <-  bind_rows(std_points_tibble,
+                                     std_points_bessel_tibble,
+                                     .id="Bessel")
+
+ggplot(data=std_points_tibble_full, aes(std_points))+
+geom_histogram(bins=10, position="identity")+
+geom_vline(aes(xintercept=std_dev(base$SalePrice)))+
+facet_wrap(vars(Bessel))
+```
+
+Claro que poderíamos seguir diminuindo o denominador para tentar alcancar melhor o desvio padrão da população. Mas o que precisamos ter em mente é que aqui se trata de um exercício didático, no dia a dia com bases volumosas, não teremos certeza do valor da população e apenas trabalharemos com amostras. Além disso, usar a correção n-1 é um consenso entre os estatísticos de ser a melhor escolha para o cálculo.
+
+Vamos por fim recapitular as notações matemáticas e suas fórmulas.
+
+Lembrando que temos uma fórmula de desvio padrão para a população e outra para a amostra, e na amostra que aplicamos a correção de Bessel.
+
+$$variancia\ (populacao) = \sigma^2$$
+$$variancia\ (amostra) = s^2$$
+
+
+$$desvio\ padrao\ (populacao) = \sqrt variancia = \sqrt \sigma^2 = \sigma$$
+
+$$desvio\ padrao\ (amostra) = \sqrt variancia = \sqrt s^2 = s$$
+
+Por fim as fórmulas:
+
+**Desvio Padrão População**
+$$\sigma = \sqrt\frac{(x_{1} -\mu)^2+(x_{2} -\mu)^2+...(x_{N} -\mu)^2}{N} = \sqrt\frac{\sum_{i=1}^{n} (x_i - \mu)^2}{N}$$
+**Desvio Padrão Amostra (com correção de Bessel)**
+$$s = \sqrt\frac{(x_{1} -\bar x)^2+(x_{2} -\bar x)^2+...(x_{n} -\bar x)^2}{n-1} = \sqrt\frac{\sum_{i=1}^{n} (x_i - \bar x)^2}{n-1}$$
+
+Para fins didáticos criamos as funções manualmente, mas vamos comparar o resultado da função criada com a função base existente no R?
+
+
+```{r}
+amostra <- sample(x=base$SalePrice, size=10)
+
+std_dev_bessel(amostra)
+sd(amostra)
+```
+
