@@ -1,0 +1,246 @@
+---
+title: "Z-Score"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(purrr)
+library(tibble)
+options(scipen=999)
+
+std_dev_bessel <- function(vetor) {
+    distancias  <-  (vetor - mean(vetor))
+    squared_dist <- distancias**2
+    sqrt(sum(squared_dist)/(length(squared_dist)-1))
+}
+```
+
+Nesse exercício vamos aprender uma técnica estatística para lidar com valores individuais.
+
+
+## Base Casas Vendidas em Ames entre 2006 e 2010
+
+
+Vamos usar essa base com 2930 linhas com 82 colunas contendo informações de características de casas vendidas entre 2006 e 2010 na cidade Ames (estado de Iowa nos EUA).
+
+Esse foi um trabalho feito pelo professor [Dean DeCock](https://www.truman.edu/faculty-staff/decock/), publicado [neste artigo](https://doi.org/10.1080/10691898.2011.11889627) e os detalhes sobre as informações presentes na base estão [neste link](https://s3.amazonaws.com/dq-content/446/data_description.txt)
+
+
+O separador da base são tabs, é um arquivo do tipo TSV (tab-separated value), são basicamente espaços.
+Poderíamos usar a função read.csv e informar o parâmetro sep= "\\t" que funcionaria da mesma forma.
+
+```{r}
+base <- read_tsv("https://s3.amazonaws.com/dq-content/444/AmesHousing.txt")
+glimpse(base)
+```
+
+## Valores Individuais
+
+Vamos imaginar que pegamos aleatoriamente uma casa no valor de 220 mil, como sabemos se esse é um valor caro, barato, na média?
+
+```{r}
+mean(base$SalePrice)
+```
+
+Calculando a média entendemos que 220 mil está da média, mas é muito acima, ou apenas ligeiramente acima? 
+
+Isso depende do desvio padrão. 
+
+Por exemplo se o desvio padrão fosse de 40 mil, uma casa de 220 mil ainda está dentro do desvio padrão (está a "um" desvio padrão de distância), e apesar de estar acima da média, está num dos valores comuns da base. 
+
+Mas se o desvio padrão fosse de 10 mil, os valores mais comuns iriam até 190 mil, o que indicaria 220 mil como um valor muito acima da média e muito caro, muito incomum (está a "quatro" desvio padrão de distância da média de 180 mil).
+
+
+Como fica esse cálculo então?
+Entendemos a distância entre o valor selecionado e a média, e dividimos essa distância pelo desvio padrão
+```{r}
+(220000 - mean(base$SalePrice)) / sd(base$SalePrice)
+```
+
+## Z-Score
+
+Representando isso numa fórmula, dado um valor x para uma população com média u e um desvio padrão o, qual o número de desvios padrão de distância da média ele tem?
+
+$$ z = \frac{x - \mu}{\sigma}$$
+
+A fórmula acima é mais conhecida como "the standard score" ou **z-score**.
+Aplicando a fórmula para amostras teríamos esse resultado:
+$$ z = \frac{x - \bar x}{s}$$
+Escrito em uma função:
+```{r}
+z_score <- function(valor, vetor){
+  media_vetor <- mean(vetor)
+  dp <- std_dev_bessel(vetor)
+  
+  (valor - media) / dp
+}
+```
+
+
+O resultado desse cálculo pode ser:
+
+- positivo, indicando que o valor está acima da média (ficando à direita da curva no gráfico) ou,
+- negativo, indicando que está abaixo da média (ficando à esquerda da curva no gráfico)
+
+O valor indica a quantos desvios padrão de distância da média ele está.
+
+Vamos entender na prática com o preço das casas, o valor médio do preço das casa é 180.796,10
+
+```{r}
+media <- mean(base$SalePrice)
+media
+```
+E se calcularmos a quantos desvios padrão da média esse valor está?
+Ele será zero pois é a própria média
+```{r}
+z_score(media, base$SalePrice)
+```
+E qual é o desvio padrão mesmo? É de 79.886,69
+```{r}
+std_dev_bessel(base$SalePrice)
+```
+
+Vamos olhar o maior valor presente na base
+```{r}
+max_valor <- max(base$SalePrice)
+max_valor
+
+```
+E qual o seu desvio padrão? é de mais de 7 desvios padrão acima da média
+```{r}
+z_score(max_valor, base$SalePrice)
+```
+- 1 desvio  padrão acima da média abrange valores até 260.682,79 (média 180796.1 + 1 desvio padrão 79.886,69)
+- 2 desvios padrão acima da média abrange valores até 340.569,48
+- 3 desvios padrão acima da média abrange valores até 420.456,17
+- ...
+- 7 desvios padrão acima da média abrange valores até 740.002,93
+- 8 desvios padrão acima da média abrange valores até 819.889,62
+
+Então de fato faz sentido esse valor estar entre 7 e 8 desvios padrão acima da média.
+
+## Aplicação do Z-Score
+
+Vamos deixar mais claro numa situação prática, por que calcular o z-score pode ser útil.
+Pense que uma empresa quer encontrar o melhor bairro para investir em casas por com valor de 200.000,00, a ideia é comprar casas num preço médio para revender num preço maior. O preço médio faz parte da estratégia da empresa, por acreditar que atrai mais compradores interessados.
+Esse valor de 200 mil pode ser abaixo da média num bairro, enquanto no outro acima da média, e o z-score vai nos ajudar a entender isso, quanto mais próximo de 0 melhor o bairro (está dentro da proposta)
+
+Nesse exemplo vamos focar em 5 bairros:
+
+- 'NAmes' for North Ames
+- 'CollgCr' for College Creek
+- 'OldTown' for Old Town
+- 'Edwards' for Edwards
+- 'Somerst' for Somerset
+
+```{r}
+target_neighborhoods <- c('NAmes', 'CollgCr', 'OldTown', 'Edwards', 'Somerst')
+
+result <- 
+  base %>%
+  filter(Neighborhood %in% target_neighborhoods) %>%
+  group_by(Neighborhood) %>%
+  summarise(z_score = abs(z_score(200000,SalePrice))) %>%
+  arrange(z_score)
+
+result
+```
+De acordo com esse resultado o melhor bairro seria Somerset, pois tem o menor z-score o que significa que está mais próximo do preço médio dentre todas as opções.
+
+
+## Distribuição do Z-Score
+
+E se a gente transformasse a base toda em z-score? como a base fica distribuída?
+
+```{r}
+base <- base %>%
+    mutate(z_prices = (SalePrice - mean(SalePrice)) / std_dev_bessel(SalePrice) )
+
+grafico1 <- 
+  ggplot(data = base,
+    aes(x = SalePrice)) +
+    geom_density(alpha = 0.1, 
+                color='blue', 
+                fill='blue') +
+    scale_y_continuous(labels = scales::comma) +
+    scale_x_continuous(labels = scales::comma, 
+                       lim = c(min(base$SalePrice), 
+                               max(base$SalePrice))) +
+    theme_bw() + 
+    xlab("Sale Price") + 
+    ylab("Density") 
+
+grafico2 <- 
+  ggplot(data = base,
+    aes(x = z_prices)) +
+    geom_density(alpha = 0.1, 
+                 color='blue', 
+                 fill='blue') +
+    scale_y_continuous(labels = scales::comma) +
+    scale_x_continuous(labels = scales::comma, 
+                       lim = c(min(base$z_prices), 
+                               max(base$z_prices))) +
+    theme_bw() + 
+    xlab("Z Price") + 
+    ylab("Density")
+
+# Show the plots side-by-side
+library(ggpubr)
+
+ggarrange(grafico2, grafico1, ncol = 2, nrow = 1)
+```
+
+Podemos ver que a distribuição dos dados se mantém, apenas trocamos a escala do valor original para o z-score.
+
+E se calculássemos a média e desvio padrão do z-score como fica?
+A média fica extramamente próximo à zero, e o desvio padrão é 1.
+Isso se dá pois o zero representa a média de 180k do SalePrice original, e 1 desvio padrão acima ou abaixo da média representa ~79k do SalePrice original. Na conversão do SalePrice para Z-score os valores se mantiveram nas mesmas posições, então o acúmulo dos dados ao redor da média se manteve, então todos registros que compunham 1 desvio padrão de distância da média continuam no mesmo lugar, portanto o z-score vai ter o valor 1 como desvio padrão, pois representa o 79k.
+
+```{r}
+mean(base$z_prices)
+std_dev_bessel((base$z_prices))
+```
+
+
+## Convertendo do Z-Score para o Valor Original
+
+O Z-Score demonstra ser muito útil para análises onde precisamos comparar valores em escalas diferentes, ou tomar decisões que dependem de avaliar o quão próximo da média um valor está. No entanto para comunicar esses resultados, o z-score não é a melhor opção por ser muito técnico. Nesse caso faz sentido recuperar o valor original.
+
+Basta pegarmos a fórmula do Z-score e fazer algumas transformações até chegar no seguinte resultado:
+
+$$x = z\sigma + \mu$$
+
+Vamos relembrar o exemplo feito acima, o bairro de Somerset foi o escolhido por ter o valor de 200 mil mais próximo da média.
+
+
+```{r}
+valor_original <- function(zscore, vetor){
+  media_vetor <- mean(vetor)
+  dp <- std_dev_bessel(vetor)
+  
+  zscore*dp+media_vetor
+}
+```
+
+```{r}
+somerst <-
+  base %>% filter(Neighborhood == "Somerst") %>% pull(SalePrice)
+
+valor_original(0.3343456, somerst)
+mean(somerst)
+```
+
+
+
