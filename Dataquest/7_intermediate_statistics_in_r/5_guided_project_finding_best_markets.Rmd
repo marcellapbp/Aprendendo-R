@@ -1,0 +1,257 @@
+---
+title: "Guided Project: Finding the Best Markets to Advertise In"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(purrr)
+library(tibble)
+library(tidyr)
+options(scipen=999)
+
+std_dev_bessel <- function(vetor) {
+    distancias  <-  (vetor - mean(vetor))
+    squared_dist <- distancias**2
+    sqrt(sum(squared_dist)/(length(squared_dist)-1))
+}
+```
+
+
+
+
+## Encontrando os melhores mercados para investir
+
+Imagine que somos uma empresa que possui uma plataforma web de cursos de programação. Muitos dos cursos são relacionados à desenvolvimento web e mobile principalmente, ainda que tenha outros segmentos como jogos, ou data science, e etc.
+Queremos promover essa plataforma através de investimento em propaganda, porém precisamos antes descobrir os melhores 2 mercados para anunciar.
+
+Com objetivo de simplificar e baratear esse processo, podemos usar uma pesquisa existente para encontrar esses resultados. Uma boa alternativa é a [Pesquisa New Coder](https://www.freecodecamp.org/news/we-asked-20-000-people-who-they-are-and-how-theyre-learning-to-code-fff5d668969) da [Free Code Camp](https://www.freecodecamp.org/) que também é uma plataforma de cursos e como eles publicam [artigos](https://www.freecodecamp.org/news/) acabam atraindo diferentes públicos somando mais de 400 mil seguidores.
+
+Os dados da pesquisa de 2017 foram publicados no [GitHub](https://github.com/freeCodeCamp/2017-new-coder-survey/tree/master/clean-data)
+
+```{r}
+base <- read_csv("https://raw.githubusercontent.com/freeCodeCamp/2017-new-coder-survey/master/clean-data/2017-fCC-New-Coders-Survey-Data.csv")
+```
+
+Para explorar mais informações sobre os dados acima, podemos consultar [esse link](https://github.com/freeCodeCamp/2017-new-coder-survey).
+
+A base de dados possui pouco mais de 18 mil linhas com 136 colunas.
+Vamos utilizar ao longo do projeto alguns desses dados para chegar no público de interesse,
+
+## **JobRoleInterest**
+
+Esse campo armazena o cargo de interesse das pessoas que responderam a pesquisa.
+Podemos olhar em busca de respostas que contenham palavras chave como "web" ou "mobile".
+
+```{r}
+base %>% select(JobRoleInterest) %>% slice_sample(n = 20)
+```
+
+A pesquisa permitia múltipla escolha, nulo, e até o preenchimento livre caso respondesse outros.
+Sendo assim mesmo tratando a informação em busca de cargos distintos retorna mais de 200 resultados.
+
+```{r}
+cargos_distintos <-
+strsplit(base$JobRoleInterest, ",") %>% #separa por vírgula
+  unlist() %>% #retira da lista
+  trimws() %>% #remove espaços
+  unique()     #traz resultados únicos
+  
+cargos_distintos %>% length()
+cargos_distintos %>% head(30)
+```
+
+Temos em torno de 6 mil pessoas interessadas em mobile ou web, apesar de representar 1 terço da base ainda parece ser o suficiente para extrair algumas respostas.
+
+```{r}
+#criando uma flag para identificar o público
+base <- 
+  base %>% 
+  mutate(IsMobileWeb = ifelse(grepl("mobile", tolower(JobRoleInterest), fixed = T) |
+                              grepl("web",    tolower(JobRoleInterest), fixed = T), 
+                              1, 0))
+#conferindo volume
+base %>% select(IsMobileWeb) %>% table()
+
+#agrupando com outras flags para conferir se faz sentido o resultado
+base %>% 
+  #removendo resultados com o Cargo de interesse nulo, pois
+  #alguns casos a flag é 1 mas o campo está nulo e atrapalha a verificação
+  filter(!is.na(JobRoleInterest)) %>% 
+  group_by(IsMobileWeb, 
+           JobInterestMobile, 
+           JobInterestFullStack,
+           JobInterestBackEnd,
+           JobInterestFrontEnd) %>% 
+  summarise(n=n())
+```
+
+## **Características do público**
+
+**País onde mora**
+
+É interessante saber onde as pessoas moram para direcionar a publicidade as regiões que elas se encontram. Na base existem 2 campos que indicam região:
+
+- CountryCitizen: onde a pessoa nasceu
+- CountryLive: onde a pessoa mora
+
+Muitos casos as pessoas continuam morando onde nasceram, mas existe a probabilidade de muitas pessoas estarem morando em outro local, e é a localidade atual que nos importa para a análise.
+
+
+
+```{r}
+base %>% 
+  filter(IsMobileWeb == 1) %>% 
+  group_by(CountryLive) %>% 
+  summarise(n=n()) %>% 
+  mutate(`%` = round(n/sum(n)*100,2)) %>% 
+  arrange(desc(n)) %>% 
+  head(10)
+```
+
+
+Como as informações na base estão no nível de países, vamos lidar como se cada país seja um mercado, um público alvo diferente. 
+
+Sendo assim vamos selecionar os maiores mercados, maior quanitdade de pessoas (EUA, India, UK, Canada), pois os indicadores de sucesso serão melhores. É mais fácil convencer 10% de 2 mil pessoas, do que 100% de países com menos de 30 pessoas. 
+
+Além disso esses países falam inglês e terão mais pessoas interessadas numa plataforma que tem cursos nesse idioma.
+
+```{r}
+publico_alvo <- 
+base %>% 
+  filter(IsMobileWeb == 1,
+         CountryLive %in% c("United States of America",
+                             "India",
+                             "United Kingdom",
+                             "Canada")) 
+```
+
+**Quanto pode arcar com custos educacionais**
+
+Dentre o público de interesse, qual o valor que podem arcar com despesas educacionais?
+Temos o campo `MoneyForLearning` e `MonthsProgramming` e se dividirmos uma informação pela outra chegamos a um custo mensal que a pessoa pode arcar.
+
+
+É importante antes de garantir apenas selecionar o público que temos informação suficiente para efetuar o cálculo.
+Cerca de 372 pessoas não informaram algum dos campos e vamos descartar.
+
+```{r}
+publico_alvo %>% 
+  filter(is.na(MoneyForLearning)  | 
+         is.na(MonthsProgramming) | 
+         MonthsProgramming == 0) %>% 
+  nrow()
+
+publico_alvo <- publico_alvo %>% 
+  filter(!is.na(MoneyForLearning)  & 
+         !is.na(MonthsProgramming) &  
+         MonthsProgramming != 0)
+
+```
+
+
+```{r}
+publico_alvo <- publico_alvo %>% 
+  mutate(spentPerMonth = MoneyForLearning/MonthsProgramming)
+
+publico_alvo %>% select(MoneyForLearning,MonthsProgramming,spentPerMonth) %>% head()
+
+publico_alvo %>% 
+  group_by(CountryLive) %>% 
+  summarise(n = n(),
+            spentMonth_max    = max(spentPerMonth),
+            spentMonth_mean   = mean(spentPerMonth),
+            spentMonth_median = median(spentPerMonth))
+```
+
+
+Parece que temos outliers que distorcem muito a média, vamos nos aprofundar melhor através de boxplots.
+
+
+```{r}
+publico_alvo %>% 
+  ggplot(aes(x=CountryLive, y=spentPerMonth))+
+  geom_boxplot()+
+  ggtitle("Gasto educacional mensal em dólares por país")+
+  xlab("País que mora")+
+  ylab("Dólares gasto por mês")+
+  scale_y_continuous(breaks = seq(0, 80000, by = 5000))+
+  theme_bw()
+```
+
+
+
+Vamos entender esse outliers para decidir como lidar com eles.
+Criando uma flag para determinar quem é outlier a partir do ponto de corte de gasto maior igual a 2.500$
+
+```{r}
+publico_alvo <-
+publico_alvo %>% 
+  mutate(flg_outlier = if_else(spentPerMonth >=2500,1,0))
+```
+
+Analisando alguns campos mais significantes para tentar mapear o perfil dessas pessoas, podemos notar que num geral que os outliers:
+
+- representam apenas 53 pessoas
+- que fizeram bootcamp, ou
+- estão há poucos meses estudando, o que provavelmente indica que fez um alto investimento num curso
+- e portanto tiveram um gasto maior em pouco tempo e distorcem nosso público de interesse.
+
+Pois uma plataforma de cursos requer um custo menor e constante.
+
+```{r}
+publico_alvo %>% 
+  group_by(flg_outlier) %>% 
+  summarise(n = n(),
+            spentPerMonth = mean(spentPerMonth),
+            MonthsProgramming = mean(MonthsProgramming),
+            AttendedBootcamp = mean(AttendedBootcamp, na.rm = T))
+```
+
+Sendo assim faz sentido remover esse público para analisar casos que se enquadram melhor em nosso análise.
+
+```{r}
+publico_alvo_s_outlier <-
+  publico_alvo %>% 
+  filter(flg_outlier == 0)
+
+```
+
+
+```{r}
+publico_alvo_s_outlier %>% 
+  ggplot(aes(x=CountryLive, y=spentPerMonth))+
+  geom_boxplot()+
+  ggtitle("Gasto educacional mensal em dólares por país")+
+  xlab("País que mora")+
+  ylab("Dólares gasto por mês")+
+  theme_bw()
+```
+
+Se repetirmos os cálculos anteriores
+
+```{r}
+publico_alvo_s_outlier %>% 
+  group_by(CountryLive) %>% 
+  summarise(n = n(),
+            spentMonth_max    = max(spentPerMonth),
+            spentMonth_mean   = mean(spentPerMonth),
+            spentMonth_median = median(spentPerMonth))
+```
+
+Após remover os casos que distorciam nossa análise vemos como isso influencia no cálculo da média do gasto em dólares mensalmente com educação.
+
+EUA que é com certeza uma boa escolha de público alvo para ofertar anúncios visto que há uma concentração maior de pessoas e tem costume de investir mais em educação.
+
+Agora no caso de escolher entre UK, Índia e Canadá, podemos escolher a Índia pelo maior volume de pessoas, ou Canadá por investir um pouco mais em educação. UK fica de fora visto que o valor de assinatura da empresa é de 59$ e portanto não seria interessante para esse público.
