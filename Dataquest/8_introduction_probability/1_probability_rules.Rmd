@@ -1,0 +1,132 @@
+---
+title: "Probability Rules"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(glue)
+
+options(scipen=999)
+```
+
+## Regras de probabilidade
+
+No último exercício aprendemos termos da probabilidade, e como calcular probabilidade teórica e empírica. Aqui vamos aprender como calcular a probabilidade de diferentes tipos de eventos.
+
+
+## Set
+
+Os conceitos que aprendemos anteriormente sobre probabilidade giram em torno de olhar para itens de uma coleção. Um **set** é uma coleção de itens distintos, ou seja, não podemos ter itens duplicados num set. Um exemplo de set é o espaço amostral, no caso de um dado de 6 lados, teremos um set de 1 a 6 onde nenhum item se repete
+
+$$Resultados = 1,2,3,4,5,6$$
+Podemos representar o espaço amostral pela letra grega Ômega
+
+
+$$\Omega = 1,2,3,4,5,6$$
+
+## Diagrama de Venn e notações
+
+Uma forma mais visual de enxergar os sets é através do uso de Diagramas de Venn.
+Imagine que nosso espaço amostral são os 6 lados de um dado (1,2,3,4,5,6) e temos 2 eventos, evento C com resultados pares (2,4,6) e evento D com resultados acima de 3 (4,5,6). Percebemos que parte dos resultados coincidem entre ambos eventos.
+
+Abaixo conseguimos representar isso.
+
+```{r}
+library(ggvenn)
+
+C <- c(2,4,6)
+D <- c(4,5,6)
+
+x <- list(C = C,
+          D = D)
+
+ggvenn(
+  x, 
+  fill_color = c("blue", "yellow"),
+  stroke_size = 0.5,
+  show_elements = T
+  )
+```
+O retângulo no qual a imagem está presente representa o espaço amostral e todas possibilidades de resultados (1,2,3,4,5,6) e pode ser representado por Ômega $\Omega$. Os círculos representam os eventos e os resultados todos fazem parte do espaço amostral.
+
+No exemplo abaixo, os eventos A e B não coincidem e portanto nenhum elemento fica presente na intersecção.
+
+```{r}
+library(ggvenn)
+
+A <- c(1,2,3)
+B <- c(4,5,6)
+
+x <- list(A = A,
+          B = B)
+
+ggvenn(
+  x, 
+  fill_color = c("red", "green"),
+  stroke_size = 0.5,
+  show_elements = T
+  )
+```
+Entendendo esse comportamento, se fôssemos calcular a probabilidade de o evento C **OU** D acontecer, em outras palavras estamos combinando os resultados (2,4,6) e (4,5,6) se tornando (2,4,5,6), que é a **união** dos eventos. 
+
+O resultado seria: 
+$$P (C\cup D) = \frac{4}{6} = 66,7%$$
+
+Vale a pena reparar aqui que a união não duplicou os elementos que estão presentes em ambos eventos (caso contrário ao calcular a probabilidade correríamos o risco do resultado ultrapassar 100%, pois o numerador poderia ser maior que o denominador).
+
+
+Agora se quisséssemos calcular a probabilidade de o evento C **E** D acontecerem ao mesmo tempo, ou seja, a **intersecção** de C e D sendo (4,6) o resultado seria:
+
+$$P (C\cap D) = \frac{2}{6} = 33,3%$$
+
+
+- C **OU** D -> $(C\cup D)$
+- C **E**  D -> $(C\cap D)$
+
+
+No caso dos eventos A e B não existem elementos que coincidem e a intersecção é um set vazio $\theta$, equivalente a 0 $P (A \cap B) = 0/6$. Isso significa que eles são **Eventos Mutuamente Exclusivos** e não existem chances de eles acontecerem ao mesmo tempo.
+
+Ja para a união dos eventos A e B, apenas no caso de eventos mutuamente exclusivos, podemos usar a **regra da adição**, como se estivéssemos somando as áreas dos círculos no diagrama (visto que os elementos são únicos em cada set e podemos literalmente somar a probabilidade de cada um).
+
+$$P (A\cup B) = P(A) + P(B)$$
+$$P (A\cup B) = \frac{3}{6} + \frac{3}{6} = \frac{6}{6} = 100\%$$ 
+
+
+## Regra de Adição Geral
+
+E se quiséssemos somar as probabilidades da união de 2 eventos que tem intersecção (não são eventos mutuamente exclusivos)? Não podemos usar a regra da adição apresentada logo acima, pois estaríamos contando a chance do elementos acontecer em ambos eventos de forma duplicada.
+
+Nesse caso a fórmula fica dessa forma:
+
+
+$$P (C\cup D) = P(C) + P(D) - P(C\cap D)$$
+
+Aqui primeiro somamos os eventos com todas "duplicações" e em seguida subtraímos a probabilidade da intersecção para anular a duplicação.
+
+$$P (C\cup D) = C(2,4,6) + D(4,5,6) - C\cap D(4,6)$$
+$$P (C\cup D) = \frac{3}{6} + \frac{3}{6} - \frac{2}{6} = \frac{4}{6} = 66,7\%$$
+Em outras palavras contamos todos elementos distintos entre os eventos C e D que são 4 (2,4,5,6) dividido pela quantidade de elementos no espaço amostral (6).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
