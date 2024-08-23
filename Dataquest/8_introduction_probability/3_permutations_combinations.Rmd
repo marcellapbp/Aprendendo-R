@@ -1,0 +1,164 @@
+---
+title: "Permutations and Combinations"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(glue)
+
+options(scipen=999)
+```
+
+## Permutas e Combinações
+
+No exercício passado nós demonstramos a dificuldade de listar todos elementos do espaço amostral de jogar uma moeda 100 vezes. Mas sabendo que foram 100 jogadas ainda conseguimos calcular as probabilidades.
+No entanto pode existir situações onde não sabemos o total.
+
+Imagine um experimento onde jogamos uma moeda $A_{1}$ e um dado de 6 lados $A_{2}$, o espaço amostral tem as seguintes possibilidades:
+
+$$(A,1),(A,2),(A,3),(A,4),(A,5),(A,6)(B,1),(B,2),(B,3),(B,4),(B,5),(B,6)$$
+
+
+Quando jogamos uma moeda só tem duas saídas possíveis (cara ou coroa) que vamos chamar de resultados **a**, e cada uma dessas saídas podem ser combinada com 6 possibilidades do dado (1,2,3,4,5,6)  que vamos chamar de resultado **b**. Então para chegar no cálculo final do tamanho do espaço amostral podemos multiplicar o total de cada jogada da moeda e do dado.
+
+$$\Omega = a * b = 2 * 6 = 12$$
+A fórmula acima é conhecida como **Princípio Multiplicativo** ou **Princípio Fundamental da Contagem** e nos ajuda a descobrir o tamanho do espaço amostral quando combinamos diferentes eventos.
+
+Se o nosso evento fosse a combinação de 3 eventos:
+
+- A Jogar Moeda
+- B Jogar dado de 6 lados
+- C Jogar Moeda
+
+Ainda podemos simplesmente multiplicar as possibilidades de cada um e chegar no resultado $\Omega = 2*6*2 = 24$.
+
+$$\Omega = a * b * ... * n$$
+
+Pensando num exemplo prático, todos nós temos um cadastro em algum site pela internet, e normalmente precisamos de um login e uma senha para acessar. A senha costuma ser composta por 8 letras ou números para garantir mais efetividade na segurança (apesar de poder ser maiúscula como minúscula além de aceitar caracteres especiais, vamos simplificar para exemplificar)
+
+- alfabeto: 26 letras
+- números de 0 a 9 = 10 algarismos
+
+Sendo assim, temos um total de 36 possibilidades para cada um dos 8 dígitos de senha
+
+ $$\Omega = 36^8 = 2821109907456$$
+Existem cerca de 2.821.109.907.456 de possibilidades, sendo a probabilidade de um hacker achar a sua senha é de 1/(2 Trilhões), ou seja quase humanamente impossível. Claro que hoje existem sistemas robustos que esses criminosos utilizam para tentar encontrar uma senha, mas criar uma senha longa com diferentes caracteres diminuem cada vez mais a probabilidade de eles acertarem.
+
+
+## Com ou Sem Reposição (Replacement)
+
+Ainda no exemplo da senha, nos 8 dígitos de possibilidades o usuário pode repetir sua escolha em cada um dos dígitos (apesar de não ser a escolha ideal de uma senha). Se escolheu a letra A no primeiro dígito, é como se a letra retornasse para o set e pudesse ser escolhido novamente no segundo dígito e assim por diante. Chamamos isso de **Amostragem com Reposição**.
+
+Agora caso quando a letra A fosse escolhida no primeiro dígito, se não fosse mais possível repeti-la nos demais dígitos, nesse caso seria uma **Amostragem sem Reposição**, e é importante entender essa diferença, pois impacta no Princípio Multiplicativo apresentado acima.
+
+Uma amostra com reposição vai ter um número muito maior de saídas, já o sem reposição, não podemos mais usar elevação visto que a cada escolha o número de possibilidades diminui.
+
+$$\Omega = 36 * 35 * 34 * ...$$
+
+## Permutação
+
+No exemplo da senhas novamente, pensando numa senha de 4 dígitos numéricos, onde cada dígito pode ser de 0 a 9, a senha 1234 é diferente de 4321 por exemplo, consideramos combinações diferentes, e o nome dado a esse comportamento é **Permutação**, quando a ordem dos elementos importam e são contabilizados como uma combinação diferente.
+
+Vamos olhar para mais um exemplo, os números 123, numa amostra sem reposição.
+
+- Se escolhermos 1 na primeira posição, sobra 2 ou 3 nas seguintes podendo formar 123 ou 132.
+- Se escolhermos 2 na primeira posição, sobra 1 ou 3 nas seguintes podendo formar 213 ou 231.
+- Se escolhermos 3 na primeira posição, sobra 1 ou 2 nas seguintes podendo formar 312 ou 321.
+
+No total temos 6 possibilidades, e para chegar nesse total podemos pensar na seguinte fórmula.
+
+$$n * (n-1) * (n-2) ... * 2*1$$
+Começa com o número total de possibilidades decrescendo até chegar na última opção restante.
+Em matemática temos um nome para esse cálculo, é o **fatorial** (n!).
+
+No exemplo do 123 poderíamos representar assim:
+
+$$n! = 3! = 3*2*1 = 6$$
+O R tem uma função base para esse cálculo
+
+```{r}
+factorial(3)
+```
+
+**Sets menores**
+
+Existe um jogo que é uma variação ao poker chamado *Texas hold'em* em que cada participante possui um set de 5 cartas dentre um deck com 52 cartas. É interessante tentar descobrir as possibilidades de combinações de cartas na mão de cada jogador, no entanto a fórmula anterior não nos serve visto que ela calcula até sobrar apenas uma opção, ou seja passar por todas as 52 cartas, e queremos ver até 5 apenas.
+
+Se trata de um experimento com amostra sem reposição onde:
+
+- E1 é a escolha da 1ª carta dentre 52 possibilidades
+- E2 é a escolha da 2ª carta dentre 51 possibilidades
+- E3 é a escolha da 3ª carta dentre 50 possibilidades
+- E4 é a escolha da 4ª carta dentre 49 possibilidades
+- E5 é a escolha da 5ª carta dentre 48 possibilidades
+
+
+$$52*51*50*49*48 = 311875200$$
+
+Sabemos que temos um grupo de 52 objetos (**n**), mas vamos retirar apenas 5 deles (**k**), então a fórmula fica assim:
+
+$$P(n,k) = n * (n−1) * (n−2) * ... * (n−k+1)$$
+
+
+Claro que ela pode ser melhor escrita, já sabemos a fórmula do fatorial, e temos que executar pelas k vezes e arrumar uma forma de cancelar o efeito do restante da fórmula. Isso é possível através da divisão!
+
+Se nosso deck tem 52 cartas e queremos apenas as 5 primeiras possibilidades (começando em 52 e terminando em 48), significa que queremos cancelar o efeito dos 47 restantes. Se dividirmos o fatorial de 52 pelo fatorial de 47 chegamos no nosso resultado. Essa é a fórmula da permutação:
+
+
+$$P(n,k) = x * (n-1) * (n-2) * ... * (n-k+1) = \frac{n!}{(n-k)!}$$
+
+No exemplo ficaria assim:
+
+$$P(52,2) = \frac{52!}{(52-5)!} = \frac{52!}{47!} = 52 * ... * 48 = 31187200$$
+
+
+## Combinação 
+
+Às vezes a ordem das combinações não importa, no caso das senhas 1234 e 4321 são senhas diferentes e a ordem importa. Mas quando não importa damos o nome de **Combinação**.
+
+Quando calculamos as possibilidades de combinações para o jogo de cartas logo acima, usamos a fórmula da permutação, e essa fórmula considera a ordem dos elementos como algo importante. Mas num jogo de cartas, não importa muito como o jogador organiza as cartas na mão, então isso diminui o número de possibilidades significativamente. Queremos então encontrar combinações de cartas únicas.
+
+Quando temos uma combinação de 3 cartas, (A,B,C) as diferentes ordenações possíveis, permutações (ABC,ACB,BAC,BCA,CAB,CBA) são ainda a mesma combinação de cartas.
+
+Na fórmula anterior quando queríamos cancelar o efeito do fatorial das 47 cartas, colocamos o $(n-k)!$ na divisão da fórmula para obter o efeito desejado. Vamos seguir o mesmo raciocínio aqui também.
+
+
+Pensando que temos n items (52 cartas) e precisamos de k itens (5 cartas), as próprias 5 combinações de cartas podem ser reordenadas em k! permutações.
+
+Vamos começar nossa fórmula onde o objetivo é encontrar o número de combinações **c**.
+De um lado temos a fórmula de permutação e podemos afirmar que a quantidade de combinações multiplicado pelo fatorial de k tem o mesmo resultado da fórmula de permutação.
+
+$$c * k! = \frac{n!}{(n-k)!}$$
+
+Então passamos o fatorial dividindo nossa fórmula
+
+$$c = \frac{\frac{n!}{(n-k)!}}{k!}$$
+Resolvendo a fórmula para diminuir a complexidade chegamos no seguinte resultado
+
+$$c= \frac{n!}{k!(n-k)!}$$
+
+Agora finalmente podemos calcular as combinações únicas
+
+$$c * k! = \frac{52!}{5!(52-5)!} = 2598960$$
+
+
+
+Por curiosidade copmo ficaria a fórmula no R
+
+```{r}
+factorial(52)/
+  (factorial(5) * factorial(52-5))
+```
+O resultado de combinações (2.598.960) é muito menor do que permutações (311.875.200)
+
+
