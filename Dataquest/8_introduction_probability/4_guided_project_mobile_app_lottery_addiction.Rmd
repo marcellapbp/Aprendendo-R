@@ -1,0 +1,206 @@
+---
+title: "Guided Project: Mobile App for Lottery Addiction"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(glue)
+library(purrr)
+
+options(scipen=999)
+```
+
+## Aplicativo de celular para vício em loteria
+
+Ao longo desse módulo aprendemos diferentes formas de calcular probabilidade, várias regras e conceitos todos de forma isolada. Nesse projeto vamos ter a oportunidade de aplicar tudo em conjunto num aplicativo que ajude pessoas viciadas em jogos a entenderem de forma mais realista as suas chances de vencer.
+
+Muitas pessoas começam a apostar por diversão e isso acaba se tornando um hábito e até mesmo um vício. Eles acabam se endividando e a necessidade de jogar vai atrapalhando outras áreas de sua vida.
+
+Esse app foi uma demanda de um instituto médico, e a expectativa que ele ajude as pessoas perceberem que ao comprar muitas cartelas não vai aumentar tanto assim as chances de elas ganharem na loteria.
+
+Nesse primeira versão do app vamos focar na [6/49 lottery do Canadá](https://en.wikipedia.org/wiki/Lotto_6/49) para responder questões como:
+
+- Quais são as chances de ganhar o grande prêmio com uma única cartela?
+- Quais são as chances de ganhar o grande prêmio com 40 cartelas (ou outra quantidade)?
+- Quais são as chances de ter pelo menos 5 números ganhadores na cartela (ou 4, ou 3, ou 2, ou 1?)
+
+A base pode ser encontrada no [**Kaggle**](https://www.kaggle.com/datasets/datascienceai/lottery-dataset?resource=download) e possui 3665 jogadas entre 1982 e 2018.
+
+```{r}
+base <- read_csv("649.csv")
+glimpse(base)
+```
+
+
+Vamos criar funções para nos dar apoio durante o projeto
+
+```{r}
+fatorial <- function(n) {
+    resultado <- 1 
+    for (i in 1:n) {
+        resultado <- resultado * i
+    }
+    return(resultado)
+}
+
+combinacao <- function(n, k){
+    fatorial(n)/  (fatorial(k) * fatorial(n-k))
+    
+}
+
+permutacao <- function(n, k) {
+    return(fatorial(n) / fatorial(n - k))
+}
+```
+
+## Probabilidade de ganhar com uma cartela
+
+
+É importante destacar que numa jogada dessa loteria são selecionados 6 números dentre um intervalo de 1 a 49, sem reposição, ou seja o número escolhido não pode se repetir, ele é removido das possibilidades uma vez que é selecionado.
+A pessoa vence o grande prêmio se sua cartela marcar os 6 números que forem selecionados na jogada.
+
+
+```{r}
+probab_cartela_unica <- function(seis_num){
+  comb <- combinacao(49 #total possibilidades
+                     ,6 #números por jogada
+                     )
+  #1 cartela só permite uma jogada, por isso 1 dividido pelo total de combinações
+  prob <- round(1/comb*100,6)
+  
+  seis_num <- paste(seis_num, collapse = ",")
+  
+  print(glue("Você escolheu os números ({seis_num}). \n
+             O jogo permite um total de {comb} combinações (números de 1 a 49). \n
+             A probabilidade de ganhar o grande prêmio com uma cartela é de {prob}%"))  
+  
+}
+
+```
+
+```{r}
+probab_cartela_unica(c(1,2,3,4,5,6))
+```
+
+Com a função acima, nós calculamos a probabilidade de a pessoa vencer o grande prêmio com uma cartela de 6 números.
+Primeiro precisamos descobrir todas as possibilidades que o jogo permite. 
+
+São 6 números de 1 a 49, sendo que a ordem desses números não importa (se o resultado for 1,2,3,4,5,6, dá na mesma de dizer que foi 6,5,4,3,2,1). Constatar isso é importante para decidir entre calcular permutações ou combinações, nesse caso aqui são combinações visto que a ordem não impacta e isso diminui o número de possibilidades.
+
+Então usamos a fórmula de combinação lembrando que só precisamos da combinação até 6 digitos, e não a combinação de todos os 49 números, o que também reduz bastante as possibilidades.
+
+Além disso, a seleção é sem reposição, se o número 1 for escolhido, ele não pode ser escolhido novamente naquela jogada, sendo assim a cada número escolhido as possibilidades disponíveis diminuem para 48, 47 e assim por diante até escolher os 6 números.
+
+Ainda assim, o resultado 13.983.816 combinações, e sua jogada é apenas UMA dessas 13 milhões de combinações,  o que representa 0,000007%, são chances ínfimas.
+
+## Dados Históricos
+
+E se os usuários pudessem comparar sua jogada com jogadas históricas que já ganharam o prêmio e mostrar se eles teríam tido a chance de ganhar? 
+
+
+As colunas "Number Drawn" mostram a combinação das jogadas.
+
+```{r}
+base %>% select(starts_with("NUMBER DRAWN")) %>% head()
+```
+
+Vamos juntar numa lista onde tem um vetor por linha com os 6 números da jogada
+```{r}
+base <- base %>% 
+  mutate(numbers_drawn=
+    pmap(
+      list(
+        v1 = base$`NUMBER DRAWN 1`,
+        v2 = base$`NUMBER DRAWN 2`,
+        v3 = base$`NUMBER DRAWN 3`,
+        v4 = base$`NUMBER DRAWN 4`,
+        v5 = base$`NUMBER DRAWN 5`,
+        v6 = base$`NUMBER DRAWN 6`),
+      function(v1,v2,v3,v4,v5,v6){c(v1,v2,v3,v4,v5,v6)}
+    ))
+
+base %>% select(starts_with("NUMBER DRAWN")) %>% head()
+base$numbers_drawn %>% head()
+```
+
+Agora vamos criar uma função para comparar a jogada feita pelo jogador, com os números sorteados na base histórica
+
+```{r}
+checar_ocorrencia_historica <- function(jogada, base_historica){
+  checa_igual <- map(base_historica, function(x){setequal(x,jogada)})
+  qtde_vezes_match <- checa_igual %>% unlist() %>% sum()
+  
+  if(qtde_vezes_match == 0){
+    print(glue("Sua jogada nunca foi sorteada :("))
+  }else if (qtde_vezes_match == 1){
+    print(glue("Sua jogada já foi sorteada {qtde_vezes_match} vez"))  
+  }else{
+    print(glue("Sua jogada já foi sorteada {qtde_vezes_match} vezes"))
+  }
+  
+}
+
+checar_ocorrencia_historica(c(3,11,12,14,41,43), base$numbers_drawn)
+checar_ocorrencia_historica(c(10,9,12,14,41,43), base$numbers_drawn)
+
+```
+
+## Probabilidade de múltiplas cartelas por sorteio
+
+O jogador pode jogar de uma única cartela até 13.983.816 cartelas que é a quantidade máxima de combinações que o jogo permite (apesar de claro ser humanamente impossível, além de provavelmente financeiramente inviável). Poderia até jogar mais vezes, mas as combinações se repetiriam.
+
+Então dado uma quantidade de cartelas que o jogador pretende jogar, vamos vez o quanto a probabilidade de ganhar muda comparado à uma única cartela.
+
+```{r}
+probab_multi_cartela <- function(qtde_cartela){
+  comb <- combinacao(49 #total possibilidades
+                     ,6 #números por jogada
+                     )
+  prob <- round(qtde_cartela/comb*100,6)
+  
+  
+  print(glue("O jogo permite um total de {comb} combinações (números de 1 a 49). \n
+             A probabilidade de ganhar o grande prêmio com uma cartela é de {prob}%"))  
+}
+
+probab_multi_cartela(10)
+probab_multi_cartela(40)
+```
+Jogando 10 vezes por exemplo, aumenta a probabilidade de 0,000007% para 0.000072%, o que ainda representa chances muito baixas. Até jogando 40 cartelas ao mesmo tempo não checa nem a 0,5% de chance.
+
+
+## Calcular probabilidade de até 5 números vencedores
+
+Apesar das baixas probabilidades de ganhar o grande prêmio acertando todos os 6 números sorteados, qual seria a probabilidade de acertar pelo menos 5 dentre os 6 números?
+
+
+```{r}
+probab_menos_6 <- function(num_acertos){
+  comb_cartela <- combinacao(6,num_acertos)
+  comb_restante <- combinacao(43, 6-num_acertos)
+  comb_sucesso <- comb_cartela * comb_restante
+  
+  comb <- combinacao(49 #total possibilidades
+                     ,6 #números por jogada
+                     )
+  prob <- round(comb_sucesso/comb*100,6)
+  
+  print(glue("Você tem {prob}% de chances de acertar {num_acertos} números"))  
+}
+
+probab_menos_6(5)
+probab_menos_6(4)
+probab_menos_6(3)
+```
+
+De fato as chances de acertar menos números vai aumentando conforme menos números se deseja acertar. Ou seja acerta um número é mais fácil que acertar 2 números, 2 números é mais facil do que acertar 3, e quanto mais números se deseja acertar, mais dificil fica.
