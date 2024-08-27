@@ -1,0 +1,133 @@
+---
+title: "Conditional Probability: Fundamentals"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(glue)
+library(purrr)
+library(ggvenn)
+
+options(scipen=999)
+```
+
+## Probabilidade Condicional
+
+Imagine que precisamos nos vestir para ir pra escola ou mesmo trabalhar, mas o dia está nublado, será que vai chover? Determinadas condições podem alterar a probabilidade de um evento ocorrer.
+
+Para isso vamos entender algumas regras da probabilidade condicional.
+
+Quando jogamos um dado de seis lados, sabemos que temos 6 possibilidades $\Omega = {1,2,3,4,5,6}$. As chances de o dado cair em 2 por exemplo é $P(2) = \frac{1}{6}$, pois apenas 1 resultado satisfaz o evento. Se o evento fosse cair um número par (2,4 ou 6) dentre as 6 possibilidades a probabilidades seria $P(2,4,6) = \frac{3}{6}$.
+
+Voltando um pouco, imagine que jogamos um dado de seis lados esperando que caísse em 2 $P(2) = \frac{1}{6}$. Mas no meio da jogada descobrimos que o dado caiu num número par. Agora sabemos que as possibilidades foram reduzidas de 6 $\Omega = {1,2,3,4,5,6}$ para 3 $\Omega = {2,4,6}$
+
+$$\Omega = {1,2,3,4,5,6}->\Omega|result\ eh\ par = {2,4,6}$$
+
+O símbolo *pipe* \| pode ser lido como "dado", ou seja, agora Omega é composto por 2,4,6 dado que sabemos que o resultado é par. Então agora o cálculo da probabilidade é feito considerando o novo tamanho do espaço amostral $P(2) = \frac{1}{3}$
+
+Agora temos duas probabilidades diferentes, qual está certa? Ambas, pois cada uma responde uma pergunta diferente:
+
+-   Qual a probabilidade de conseguir 2?
+-   Qual a probabilidade de conseguir 2, dado que o dado caiu num número par?
+
+Na segunda pergunta introduzimos uma **condição**, e a notação na fórmula para representar essa condição ficaria assim:
+
+$$P(2|result\ eh\ par) = \frac{1}{3}$$
+
+Repare que o número total de possibilidades no espaço amostral era inicialmente 6, e dado uma condição reduziu para 3, o nome dado para esse número é **cardinalidade**.
+
+$$card(\Omega) = 6$$
+
+## Fórmula
+
+Se o nosso evento A for ser um número par (2,4, ou 6), e sabemos que o dado caiu num número maior que 2 (evento B), ou seja (3,4,5,6), sabemos que o resultado precisa satisfazer A e B e só pode ser 4 ou 6. Logo temos uma intersecção de A com B $A\cap B$
+
+```{r}
+x <- list(A = c(2,4,6),
+          B = c(3,4,5,6))
+
+ggvenn(
+  x, 
+  fill_color = c("blue", "yellow"),
+  stroke_size = 0.5,
+  show_elements = T
+  )
+```
+
+Nesse caso podemos representar a fórmula assim:
+
+$$P(A|B) = \frac{card(A \cap B)}{card(B)}$$
+
+## Exemplo
+
+Trazendo para um caso mais realista, vamos imaginar um cenário onde um centro de pesquisa quer entender se um teste para HIV é confiável o bastante para ser aplicado num hospital
+
+| Tabela |  P  | $P^C$ | Total |
+|:------:|:---:|:-----:|:-----:|
+|   T    | 21  |  24   |  45   |
+| $T^C$  |  2  |   6   |   8   |
+| Total  | 23  |  30   |  53   |
+
+
+Temos um total de 53 pessoas divididas em P = Pessoas com HIV e  $P^C$ = Pesssoas sem HIV (complemento ao P). Além disso essas pessoas passaram pelo teste e as que deram positivo são representadas por T, e quando o teste deu negativo foi representado por  $T^C$ (complemento ao T).
+
+Isso significa que 23 pessoas tinham HIV porém apenas 21 delas foram detectadas pelo teste, ou seja 2 delas foram um **falso negativo** dizendo que não tem a doença no resultado do exame embora elas tenham. Enquanto que das 30 pessoas sem HIV, 24 delas deram **falso positivo**.
+
+Agora o time de pesquisadores querem saber:
+
+- 1- Qual a probabilidade de alguém testar positivo, dado que o paciente possui HIV? $P(T|P)= \frac{card(T \cap P)}{card(P)}$
+- 2- Qual a probabilidade de alguém testar negativo, dado que o paciente não possui HIV? $P(T^C|P^C)= \frac{card(T^C \cap P^C)}{card(P^C)}$
+
+**Pergunta 1**
+
+- Sabemos que a intersecção entre quem testou positivo (T) com quem de fato tem a doença (P) é 21 ($card(T \cap P)$)
+- Sabemos que 23 pessoas têm a doença ($card(P)$)
+
+O resultado fica:
+
+$$P(T|P)= \frac{card(T \cap P)}{card(P)} = \frac{21}{23} = 91,3\% $$
+
+**Pergunta 2**
+
+- Sabemos que a intersecção entre quem testou negativo ($T^C$) com quem não tem a doença ($P^C$) é 6 ($card(T^C \cap P^C)$)
+- Sabemos que 30 pessoas não têm a doença ($card(P^C)$)
+
+O resultado fica:
+
+$$P(T^C|P^C)= \frac{card(T^C \cap P^C)}{card(P^C)} = \frac{6}{30} = 20\% $$
+
+
+O resultado diz que de quem não tem a doença, apenas 20% foi dado como negativo, isso significa que tivemos muitos falsos positivos, e 80% dessa população sem HIV que foi incorretamente diagnosticado indica que o teste ainda precisa ser trabalhado antes de ser implementado para melhorar esse resultado.
+
+
+## Calcular sem a cardinalidade da condição
+
+Às vezes não temos a cardinalidade do evento ou é um evento tão raro que fica difícil de colocar o valor exato na fórmula. $P(T|P)= \frac{card(T \cap P)}{card(P)}$
+
+Então seria útil uma fórmula que não fosse baseada nas cardinalidades do evento.
+
+Se ao invés de usarmos a cardinalidade no numerador e denominador, usássemos as probabilidades?
+
+$$P(T|P)= \frac{P(T \cap P)}{P(P)} = \frac{\frac{21}{53}}{\frac{23}{53}} = 91,3\% $$
+
+O resultado é o mesmo, funciona!
+
+
+Voltando para o exemplo do teste de HIV, para o pesquisar buscar a probabilidade de o teste dar positivo para quem tem a doença $P(T|P)$ faz sentido, mas para o ponto de vista do paciente o que ele espera saber é dado que o teste T é positivo, quais as chances reais de ele realmente ter a doença $P(P|T)$. Apesar de parecer a mesma coisa, os resultados podem ser completamente diferentes.
+
+Segundo os pesquisadores dessa outra pesquisa, $P(T) = 0.12$ e $P(P \cap T) = 0.000015$, então:
+
+$$P(P|T) = \frac{P(P \cap T)}{P(T)} = \frac{0.000015}{0.12} = 0.000125 = 0.0125\%$$
+
+Esse resultado por exemplo traria um pouco de alívio para o resultado, pois as chances de a pessoa ter a infecção são poucas.
+
