@@ -1,0 +1,263 @@
+---
+title: "Conditional Probability: Intermediate"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(glue)
+
+options(scipen=999)
+```
+
+## Condição vs Intersecção
+
+No exercício passado chegamos à duas fórmulas de cálculo de probabilidade dado uma condição:
+
+$$P(A|B) = \frac{card(A \cap B)}{card(B)}$$
+
+
+$$P(A|B) = \frac{P(A \cap B)}{P(B)}$$
+Uma outra forma de entender P(A|B) é "dado que B aconteceu, então quais são as chances de A acontecer?".
+A fórmula dá a entender que estamos olhando a relação entre A e B, mas $P(A \cap B)$ que é a probabilidade de ambos acontecerem, então qual a diferença entre  $P(A \cap B)$ e  $P(A | B)$?
+
+Vamos por hora focar na **Primeira fórmula**
+
+Vamos pensar no seguinte exemplo novamente com um dado de 6 lados:
+
+- Evento A: Número é ímpar (1,3,5)
+- Evento B: Número é maior que 1 (2,3,4,5,6)
+
+Então a probabilidade de ser um número ímpar, dado que o número é maior que 1 é
+
+$$P(A|B) = \frac{card(A \cap B)}{card(B)} = \frac{2}{6}$$
+Já encontrar $P(A \cap B)$ significa encontrar a probabilidade de ambos eventos acontecerem juntos:
+
+$$P(A \cap B) = \frac{card(A \cap B)}{card(\Omega)} = \frac{2}{6}$$
+
+
+
+Notamos que ambos conceitos apesar de diferentes resultaram em $\frac{2}{6}$. $P(A|B)$ usa a cardinalidade de B enquanto que $P(A \cap B)$ usa a carnalidade de $\Omega$.
+Condicionar a probabilidade faz com que o denominador encolha (nesse caso de todas possibilidades $\Omega$ para B).
+
+
+**Segunda Fórmula**
+
+Até aqui não encontramos diferenças para evidenciar, então vamos olhar a segunda fórmula.
+
+Existe uma diferença matemática entre ambos conceitos $P(A \cap B)$ e $P(A | B)$ 
+
+$$P(A|B) = \frac{P(A \cap B)}{P(B)}$$
+
+
+Se tentarmos isolar o $P(A \cap B)$ na fórmula acima (ou seja, mover o $P(B)$ que está dividindo, multiplicando do outro lado da fómula chegamos no seguinte resultado)
+
+
+$$P(A \cap B) = P(A|B) * P(B)$$
+
+## Complementos
+
+Pensando num exemplo de um site que vende eletrônicos e estamos interessados em ver a relação de probabilidade de vendas entre Mouses (M) e notebooks (L):
+
+| Tabela |  $L$ | $L^C$ | Total |
+|:------:|:----:|:-----:|:-----:|
+| $M$    | 32   |  483  |  515  |
+| $M^C$  | 58   |  1427 |  1485 |
+| Total  | 90   |  1910 |  2000 |
+
+$P(M^C|L)$ é a probabilidade de uma pessoa comprar um notebook e não levar um mouse 
+
+$$P(M^C|L) = \frac{card(M^C \cap L)}{card(L)} = \frac{58}{90}$$
+Lembrando que o C representa o complemento a um evento, e um evento junto de seu complemento representa 100% de probabilidade
+
+$$P(A \cup A^C) = P(A) + P(A^C) = 1$$
+Pensando que um cliente que comprou um notebook, só existe 2 opções ou ele comprou ou mouse, ou não comprou. Então somado essas duas possibilidades também temos 100%
+
+$$P(M|L) + P(M^C|L) = 1$$
+
+Já que $P(M|L) = \frac{32}{90}$ e $P(M^C|L) = \frac{58}{90}$ podemos comprovar isso assim:
+
+$$P(M|L) + P(M^C|L) = \frac{32}{90} + \frac{58}{90} = 1$$
+
+Portanto em termos gerais a soma de um evento A dado B com o complemento de A dado B é 100%
+
+$$P(A|B) + P(A^C|B) = 1$$
+
+Veja que aqui não citamos o complemento de B, visto que o B aqui está limitando as possibilidades, é o A e seu complemento $A^C$.
+
+Nós já vimos essa regra antes, aqui só estamos reforçando que as regras de probabilidade que vimos até aqui também se aplicam na probabilidade condicional.
+
+
+## Diferença entre Eventos e Condições
+
+Vamos nos aprofundar na diferença entre $P(A|B)$ e $P(B|A)$, que apesar de causar confusão em nossa cabeça e parecer a mesma coisa, são bem diferentes.
+
+Olhando ainda o exemplo do Mouse e Notebook
+
+| Tabela |  $L$ | $L^C$ | Total |
+|:------:|:----:|:-----:|:-----:|
+| $M$    | 32   |  483  |  515  |
+| $M^C$  | 58   |  1427 |  1485 |
+| Total  | 90   |  1910 |  2000 |
+
+ $P(M|L) = \frac{32}{90}$ e $P(L|M) = \frac{32}{515}$ tem perguntas bem diferentes apesar de olhar para o "mesmo lugar".  $P(M|L)$ condiciona a pergunta à pessoa que está comprando o Notebook L e $P(L|M)$ condiciona a pergunta à pessoa que está comprando o Mouse M. Pode sim acontecer de a resposta de ambos coincidir e ser a mesma, porém dado o exemplo acima não é o caso.
+ 
+Lembre então que na notação o Evento vem antes e a Condição em seguida.
+
+## Intersecção de Probabilidades
+
+Vimos que para determinar a probabilidade de uma intersecção podemos usar a fórmula da probabilidade condicional.
+
+$$P(A|B) = \frac{P(A \cap B)}{P(B)}$$
+$$P(A \cap B) = P(A | B) * P(B)$$
+
+é uma fórmula similar a regra da multiplicação também, só que vimos a multiplicação de duas probabilidades "não-condicionais". A única diferença aqui é que um dos lados da multiplicação tem uma probabilidade condicional.
+
+Nós afirmamos anteriormente que $P(A|B)$ é diferente de $P(B|A)$, 
+
+A fórmula de ambos fica assim:
+
+$$P(A|B) = \frac{P(A \cap B)}{P(B)}$$
+
+$$P(B|A) = \frac{P(B \cap A)}{P(A)}$$
+
+
+ Repare que em ambos mesmo invertendo o ponto de vista, o numerador sempre é igual, a intersecção entre A e B, o que muda é apenas o denominador que é a condição.
+ 
+ Se pegarmos novamente as fórmulas acima isolando a intersecção vemos que a fórmula pode ser escrita de duas formas diferentes.
+ 
+ 
+$$P(A \cap B) = P(A | B) * P(B)$$
+
+$$P(B \cap A) = P(B | A) * P(A)$$
+
+Ou seja:
+$$P(A | B) * P(B) = P(B | A) * P(A)$$
+**Exemplo**
+
+Antes de avançar na fórmula, vamos praticar esse conceito com um exemplo de bolinhas de gude.
+
+Imagine um saco com 10 bolinhas de gude, onde 6 são verdes e 4 são vermelhas. Queremos saber a probabilidade de pegar uma vermelha na primeira vez, seguida de uma bolinha verde.
+
+Na primeira vez temos $P(A) = \frac{4}{10}$ 4 bolinhas são vermelhas dentre as 10 presentes no saco. Já na segunda vez já removemos uma bolinha, então sobra 9 e temos 6 verdes $P(B) = \frac{6}{9}$.
+
+Usando a regra da multiplicação
+
+$$P(A \cap B) = P(B|A) * P(A) = \frac{6}{9} * \frac{4}{10} = \frac{24}{90}$$
+
+## Probabilidade Condicional e Independência
+
+**Voltando na fórmula**
+
+$$P(A \cap B) = P(A | B) * P(B)$$
+
+$$P(B \cap A) = P(B | A) * P(A)$$
+
+
+Nós aprendemos a regra de multiplicação no módulo de Introdução à Probabilidade, e vamos agora ver como a partir da fórmula acima simplificar e chegar numa fórmula de probabilidade não condicional.
+
+Considerando jogar um dado de 6 lados:
+
+-  Evento A: conseguir 5 na 1ª jogada
+-  Evento B: conseguir 6 na 2ª jogada
+
+Sendo assim $P(A) = \frac{1}{6}$ e $P(B|A) = \frac{1}{6}$, em outras palavras na 1ª jogada só temos uma chance de sair 5, e dado que isso aconteceu, na 2ª jogada só temos uma chance de sair 6.
+
+Nesse caso A não afeta o denominador na fórmula. Como o dado é honesto, independente do número que sair na 1ª jogada não terá impacto nem diminuirá as chances de sair um determinado número na 2ª. O resultado acaba sendo o mesmo entre A e A|B.
+
+Sendo assim se um evento não afeta o outro, pouco importa se existe uma condição imposta, o resultado será o mesmo.
+
+$$P(A \cap B) = P(B|A) * P(B) = P(A) * P(B)$$
+
+Então podemos resumir as probabilidades de eventos independentes com condicional da seguinte forma:
+
+$$P(A) = P(A|B)$$
+$$P(B) = P(B|A)$$
+$$P(A \cap B) = P(A) * P(B)$$
+
+Por fim conseguimos demonstrar matematicamente o que significa serem eventos independentes.
+
+## Eventos Dependentes
+
+Continuando o exemplo dos dados, vimos que uma jogada não impacta na outra. Mas e se a condição for imposta na mesma jogada?
+
+- Evento A: conseguir o valor 4
+- Evento B: ser um valor par (2,4,6)
+
+nesse caso a condição B reduz o número de possibilidades para 3 e a fórmula que vimos acima a equivalência não funciona mais. Aí podemos voltar as fórmulas de antes.
+
+$$P(A \cap B) = P(A | B) * P(B)$$
+
+$$P(B \cap A) = P(B | A) * P(A)$$
+
+E tanto faz as fórmulas, o resultado será o mesmo nesse caso, horas uma será mais fácil de executar que a outra.
+
+## Independência para 3 eventos
+
+Até o momento calculamos a probabilidade para 2 eventos, mas como fica no caso de 3?
+Vimos que a regra de multiplicação pode ser entendida para mais eventos caso eles sejam independentes:
+
+$$P(A \cap B \cap C ...) = P(A) * P(B) * P(C) ...$$
+
+No entanto isso traz mais complexidade ao entender se todos os eventos são independentes.
+Um evento tem que ser independente dos demais, e isso significa que os relacionamentos abaixo são verdadeiros:
+
+
+$$P(A \cap B) = P(A) * P(B)$$
+$$P(A \cap C) = P(A) * P(C)$$
+$$P(B \cap C) = P(B) * P(C)$$
+
+Os eventos acima são independentes em par, em inglês *pairwise independents*.
+Eles serem independentes todos juntos significa:
+
+
+$$P(A \cap B \cap C) = P(A) * P(B) * P(C)$$
+E se ambas condições se sustentarem dizemos que eles são **mutuamente independentes**. O *pairwise independence* não determina automaticamente que também será mutuamente independente.
+
+Vamos ver um exemplo que tem *pairwise independence* mas não é mutuamente independente.
+
+Jogando uma moeda honesta duas vezes temos os seguintes eventos:
+
+- Evento A: Cara nas 2 jogadas, ou Cara seguido de coroa {aa,ab}
+- Evento B: Cara nas 2 jogadas, ou Coroa seguido de cara {aa,ba}
+- Evento C: Cara nas 2 jogadas, ou Coroa nas 2 jogadas {aa,bb}
+
+O espaço amostral de jogar uma moeda duas vezes é:
+
+$$\Omega = {aa,ab,ba,bb}$$
+
+Para cada um dos eventos temos 2 resultados que satisfazem os eventos
+
+$$P(A) = P(B) = P(C) = \frac{2}{4} = \frac{1}{2}$$
+Se calcularmos a probabilidade da intersecção de A com B (resultado aa) temos o mesmo resultado de multiplicar A por B:
+
+$$P(A \cap B) = \frac{1}{4}$$
+
+$$P(A \cap B) = P(A) * P(B) = \frac{1}{4}$$
+
+E esse comportamento de pairwise se extende pelos 3 eventos
+
+$$P(A \cap B) = P(A) * P(B) = \frac{1}{4}$$
+
+$$P(A \cap C) = P(A) * P(C) = \frac{1}{4}$$
+
+$$P(B \cap C) = P(B) * P(C) = \frac{1}{4}$$
+
+
+Agora se checarmos a segunda condição que é a intersecção dos 3 eventos $(A \cap B \cap C)$ o resultado sai diferente:
+
+$$P(A \cap B \cap C) = P(A) * P(B) * P(C) = \frac{1}{2} * \frac{1}{2} *  \frac{1}{2} =  \frac{1}{8} $$
+
+
+Sendo assim o evento não é mutuamente independente apesar de ser pairwise independent.
+
+
