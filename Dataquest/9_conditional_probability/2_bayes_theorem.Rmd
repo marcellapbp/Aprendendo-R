@@ -1,0 +1,232 @@
+---
+title: "Bayes Theorem"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(glue)
+
+options(scipen=999)
+```
+
+## Revisão de Independência vs Exclusividade
+
+Para se aprofundar no tópico principal, vale antes recapitular esses conceitos.
+
+Eventos serem exclusivos, siginifica que eles nunca acontecerão ao mesmo tempo (Ao jogar um dado a saída não pode ser par e ímpar ao mesmo tempo). 
+
+Já eventos serem independentes, significa que a ocorrência de um evento não diminui ou impacta nas chances do outro ocorrer (jogar uma vez o dado, não muda a saída ao jogar uma segunda vez. Diferente de uma carta que quando escolhemos uma carta num jogo com 52 cartas, ao escolher a segunda carta o jogo tem 51 cartas).
+
+
+A fórmula de eventos independentes:
+
+$$P(A \cap B) = P(A) * P(B)$$
+Já quando eles são dependentes:
+$$P(A \cap B) = P(A) * P(B|A)$$
+
+Eventos exclusivos:
+
+$$P(A \cap B) = 0 $$
+
+## Revisão da Regra da adição
+
+$$P(A \cup B) = P(A) + P(B) - P(A \cap B)$$
+Sabemos que para eventos mutuamente exclusivos será $P(A \cap B) = 0$ sendo assim podemos remover esse trecho da fórmula nesses casos:
+$$P(A \cup B) = P(A) + P(B)$$
+
+
+Vamos considerar um exemplo de teste de HIV:
+
+- A probabilidade de o resultado do teste ser **positivo** e a pessoa **não estar** infectada é de $P(T|D^C) = 0.0105$.
+- A probabilidade de o resultado do teste ser **positivo** e a pessoa **estar** infectada é de $P(T|D) = 0.9978$.
+- A probabilidade de a pessoa **estar** infectada é de $P(D) = 0.0014$ (a prevalência da HIV)
+- A probabilidade de a pessoa **não estar** infectada é de $P(D^C) = 0.9986$ 
+
+Quando a gente abordou esse exemplo a primeira vez olhamos sob o contexto de probabilidade condicional $P(T|D)$. Mas e se a gente quiser olhar $P(T)$ isoladamente? Esse cenário pode ter 2 situações, a pessoa com teste positivo **está** ou **não está** infectada por HIV.
+
+Quando pensamos num resultado de um teste, achamos que o resultado positivo automaticamente constata que a doença está presente, mas existe as chances de a pessoa ter, ou não ter e o teste ter errado. A probabilidade condicional nos lembra dessa possibilidade.
+
+Esses 2 cenários podem ser descritos da seguinte forma:
+
+$$P(T) = P(T \cap D) \cup (T \cap D^C)$$
+
+Juntando ambas probabilidades (dado teste positivo $T$, **ter** $D$ ou **não ter** HIV $D^C$) temos 100% de probabilidade do teste positivo. Podemos enxergar isso através da ilustração abaixo:
+
+![diagrama 1](diagram_1.png)
+
+A junção de pessoas com ou sem infecção de HIV representam 100% de probabilidade. Por isso chamamos esses eventos de **exautivos** visto que cobrem todas as possibilidades dentro do espaço amostral $\Omega$, uma vez que não existe meio termo na doença.
+
+Eles são independentes, mutuamente exclusivos e exaustivos. Também podemos dizer que cada um é uma **partição** do espaço amostral.
+
+Agora vamos adicionar o elemento $T$ nesse diagrama para entender melhor a fórmula.
+
+![diagrama 2](diagram_2.png)
+
+Podemos notar que o teste positivo acontece em parte com aqueles que tem e parte em quem não tem HIV.
+A sobreposição de T em D demonstra a probabilidade interseccional. E uma vez que $D$ e $D^C$ são mutuamente exclusivos, o mesmo ocorre com as intersecções $T \cap D$ e $T \cap D^C$.
+
+Isso tudo foi para ilustrar que a união de ambos pode ser feito através da soma de ambos.
+
+$$P(T) = P(T \cap D) \cup (T \cap D^C)$$
+
+Se torna:
+$$P(T) = P(T \cap D) + (T \cap D^C)$$
+
+Agora podemos representar $P(T)$ usando a regra da multiplicação
+
+$$P(T) = P(D) * P(T|D) + P(D^C) * P(T|D^C)$$
+
+$$P(T) = 0.0014 * 0.9978 + 0.9986 * 0.0105 = 0.0119$$
+
+O resultado de 1.19% parece pouco mas é porque HIV já é um evento muito raro.
+
+## Exemplo
+
+Agora que temos uma fórmula geral, vamos aplicar a mais um cenário:
+
+$$P(A) = P(B) * P(A|B) +  P(B^C) * P(A|B^C) $$
+
+Imagine uma aviação onde temos:
+
+- 73% viagens são feitas em Boeing
+- Quando há delay, dado que o avião foi Boeing, representa 3% das viagens
+- 27% viagens são feitas em Airbus
+- Quando há delay, dado que o avião foi Airbus, representa 8% das viagens
+
+$$P(Delay) = P(Boeing) * P(Delay|Boeing) +  P(Airbus) * P(Delay|Airbus) $$
+Ou seja, não sabemos o delay como um todo independente se for Boeing ou Airbus, mas com as informações fornecidas podemos calcular.
+
+$$ P(Boeing) = 0.73$$
+
+$$ P(Airbus) = 1 - P(Boeing) = 0.27$$
+$$P(Delay|Boeing) = 0.03$$
+$$P(Delay|Airbus) = 0.08$$
+Substituindo essas partes na fórmula completa temos:
+
+$$P(Delay) =  0.73 * 0.03 +  0.27 * 0.08 = 0.0435$$
+
+## Três Eventos
+
+Vamos usar a mesma fórmula agora considerando 3 aviões. Boeing, Airbus e ERJ.
+
+- 58% viagens são feitas em Boeing
+- Quando há delay, dado que o avião foi Boeing, representa 4% das viagens
+- 31% viagens são feitas em Airbus
+- Quando há delay, dado que o avião foi Airbus, representa 7% das viagens
+- 11% viagens são feitas em ERJ
+- Quando há delay, dado que o avião foi ERJ, representa 2% das viagens
+
+$$P(D) = P(B) * P(D|B) + P(A) * P(D|A) + P(E) * P(D|E)$$
+$$P(Delay) = 0.58 * 0.04 + 0.31 * 0.07 + 0.11 * 0.02 = 0.0471$$
+
+
+No caso a fórmula genérica para esse exemplo, visto que não é mais o evento $E$ e um complemento $E^C$, é:
+
+$$P(A) = P(B_1) * P(A|B_1) + P(B_2) * P(A|B_2) + P(B_3) * P(A|B_3)$$
+
+
+## A lei da probabilidade total
+
+Note que para cada um dos exemplos estamos considerando os aviões do exemplo como o total de possibilidades no espaço amostral.
+Mas e se tiver *n* possibilidades?
+
+$$\Omega = {B_1, B_2, ..., B_n}$$
+Da mesma forma, a fórmula amplia:
+
+$$P(A) = P(B_1) * P(A|B_1) + P(B_2) * P(A|B_2) + ... + P(B_n) * P(A|B_n)$$
+
+E o nome dessa fórmula é **A lei da probabilidade total**. Quando temos muitas somas podemos representa-las pela letra grega da soma sigma $\Sigma$.
+
+A fórmula continua sendo a mesma, mas reduzida na sua expressão para facilitar e o sigma representa o loop de *n* repetições.
+
+
+$$P(A) = \sum_{i=1}^{N} P(B_i) * P(A|B_i)$$
+
+## Teorema de Bayes
+
+Nós já aprendemos que se trocarmos de ordem o evento vs a condição a probabilidade é diferente ($P(A|B)$ ou $P(B|A)$).
+A Lei da probabilidade total nos permitiu entender melhor a relação dessas situações. Sabemos que a intersecção das probabilidade interseccional pode ser escrita de duas maneiras:
+
+$$P(A \cap B) = P(A|B) * P(B)$$
+
+$$P(A \cap B) = P(B|A) * P(A)$$
+
+E isso acontece visto que a intersecção não muda independente do ponto de vista. E visto que ambas são iguais podemos derivar a fórmula:
+
+$$P(A \cap B) = P(A|B) * P(B) = P(B|A) * P(A)$$
+
+
+$$P(A|B) * P(B) = P(B|A) * P(A)$$
+$$P(B|A) = \frac{P(A|B) * P(B)}{P(A)}$$
+
+
+Essa fórmula sugere que existe uma razão entre A e B ($\frac{P(B)}{P(A)}$), vamos nos aprofundar nisso com mais um exemplo.
+
+Voltando no exemplo dos 2 aviões Boeing e Airbus, a fórmula da Lei da Probabilidade Total nos ajudou a encontrar o delay geral dado que tínhamos as demais informações. Imagine que agora queremos na verdade descobrir o delay de um determinado avião. Em outras palavras, qual a probabilidade de o avião ser um Boeing dado que teve delay $P(Boeing|Delay)$? Veja que é diferente da informação que já temos, dado que é um Boeing teve delay em 3% $P(Delay|Boeing)$.
+
+$$P(Delay) = P(Boeing) * P(Delay|Boeing) +  P(Airbus) * P(Delay|Airbus) $$
+$$P(Delay) =  0.73 * 0.03 +  0.27 * 0.08 = 0.0435$$
+
+Agora podemos "plugar" na fórmula que construímos logo acima $P(B|A) = \frac{P(A|B) * P(B)}{P(A)}$ e fica assim:
+
+$$P(Boeing|Delay) = \frac{P(Delay|Boeing) * P(Boeing)}{P(Delay)}$$
+$$P(Boeing|Delay) = \frac{0.03 * 0.73}{0.0435} = 0.5034$$
+
+Esse exemplo ilustrou o **Teorema de Bayes**, nos tornamos capaz de mudar o ponto de vista da probabilidade condicional.
+
+Matematicamente podemos mostrar a fórmula dessa maneira:
+
+
+$$P(A \cap B) = P(A|B) * P(B) = P(B|A) * P(A)$$
+
+$$P(A|B) * P(B) = P(B|A) * P(A)$$
+
+$$P(B|A) = \frac{P(A|B) * P(B)}{P(A)}$$
+$$P(B|A) = \frac{P(A|B) * P(B)}{\sum_{i=1}^{n} P(B_i) * P(A|B_i)}$$
+A fórmula genérica é um pouco diferente pois pode ser aplicada para casos com mais de 2 possibilidades, diferente do exemplo que usamos com 2 aviões.
+
+Resumindo:
+
+**Probabilidade Condicional**
+$$P(A|B) = \frac{P(A \cap B)}{P(B)}$$
+**A Lei da Probabilidade Total**
+$$P(B) = \sum_{i=1}^{n} P(A_i)*P(B|A_i)$$
+**Teorema de Bayes**
+$$P(A|B) = \frac{P(A) * P(B|A)}{\sum_{i=1}^{n} P(A_i) * P(B|A_i)}$$
+
+## Probabilidade Priori e Posteriori
+
+Voltando ao Exemplo do Teste de HIV:
+
+- A probabilidade de o resultado do teste ser **positivo** e a pessoa **não estar** infectada é de $P(T|D^C) = 0.0105$.
+- A probabilidade de o resultado do teste ser **positivo** e a pessoa **estar** infectada é de $P(T|D) = 0.9978$.
+- A probabilidade de a pessoa **estar** infectada é de $P(D) = 0.0014$ (a prevalência da HIV)
+- A probabilidade de a pessoa **não estar** infectada é de $P(D^C) = 0.9986$ 
+
+ $P(T|D) = 0.9978$ significa que para pacientes infectados por HIV tem 99,78% de chance de o teste dar positivo, e $P(T|D^C) = 0.0105$ siginifica que para pacientes não infectados por HIV tem 1,05% de chance de o resultado dar positivo equivocadamente. O que demonstra que o teste é bem preciso.
+ 
+ Mas o paciente não sabe qual é sua condição, se ele está infectado $D$ ou não $D^C$. Para ele o interessante é saber o ponto de vista contrário, quais as chance de ele realmente estar infectado dado que o Teste deu positivo $P(D|T)$. Com o Teorema de Bayes conseguimos calcular agora.
+ 
+ $$P(T) = P(D) * P(T|D) + P(D^C) * P(T|D^C)$$
+ $$P(T) = 0.0014 * 0.9978 + 0.9986 * 0.0105 = 0.0119$$
+ $$P(D|T) = \frac{0.0014 * 0.9978}{0.0119} = 0.1174$$
+ 
+ Veja que a probabilidade de o Teste ser positivo é baixa, mas essa probabilidade aumenta com a prevalência da doença.
+ Esse parece ser apenas mais um conceito de probabilidade, mas na verdade é algo presente em nosso dia a dia.
+ 
+ Todos nós temos crenças que podem estar certas ou não. Podemos por exemplo achar que R não é uma habilidade útil de de aprender, mas ao ver muitas vagas de trabalho exigindo essa habilidade ter **evidências** que mudam essa crença e passamos a acreditar que é útil. E essa é a essência do Teorema de Bayes, todos nós temos crenças a **priori** (anterior a algo) e mudamos isso após evidências do contratio (**a posteriori**).
+ 
+ - Antes do Teste $P(D)$
+ - Depois do Teste $P(D|T)$
+ 
+ A probabilidade antes do teste é chamada de **Probabilidade a Priori** por acontecer antes, já após o teste chamamos de **Probabilidade a Posteriori**.
