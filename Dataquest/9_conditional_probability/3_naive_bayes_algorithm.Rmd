@@ -1,0 +1,249 @@
+---
+title: "The Naive Bayes Algorithm"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(glue)
+
+options(scipen=999)
+```
+
+## Filtro de Spam
+
+Nos exercícios passados aprendemos uma série de conceitos envolvendo probabilidade condicional, a lei da probabilidade total e o teorema de Bayes. Com isso para se aprofundar nesses conceitos vamos construir um filtro de spam.
+
+Spams são mensagens enviadas à muitas pessoas com a intenção de fazer propaganda ou até mesmo engana-las. Um grande exemplo de filtro de spam é o lixo eletrônico que normalmente serviço de e-mail oferece. Essas mensagens normalmente trazem grande incômodo, pois geram volume de e-mails por exemplo trazendo a sensação de bagunça uma vez que os e-mails importantes ficam misturados com e-mails indesejados.
+
+Será que conseguimos construir um sistema que, sem muito trabalho manual, seja capaz de diferenciar e-mails importantes de spams? Para alcançar nosso objetivo vamos usar um algoritmo chamado de **Naive Bayes Algorithm** que implementa o Teorema de Bayes. 
+
+**Antes de começar...**
+
+Você pode estar se perguntando, porque precisamos de um algoritmo?
+Condições if-else não seriam suficientes? 
+
+Por exemplo um e-mail com o seguinte conteúdo "VOCÊ GANHOU! Resgate seu prêmio em até 8 horas **clicando aqui**".
+
+Por um momento pode parecer simples criar uma condição caso o e-mail tenha um conteúdo com a palavra "prêmio" deva ir para o spam. Mas e se você realmente for premiado e esse e-mail tão importante cair no spam? Além disso spams podem ter diversos assuntos, e seriam muitas cláusulas de if-else para dar conta de tanta variedade.
+
+Nós precisamos de algo escalável, de um código legível, e que sirva pra muitas situações e pessoas diferentes.
+
+Então ok, o que nós poderíamos fazer é classificar alguns casos manualmente para usar um algoritmo para aprender esse padrão de comportamento. E é justamente isso que o Naive Bayes Algorithm faz! Com essas informações o algoritmo é capaz de criar algumas regras para classificar as mensagens, ele transforma a dúvida numa probabilidade condicional:
+
+$$P(Spam|Mensagem)$$
+Em outras palavras, ele verifica qual a probabilidade de ser spam dado seu conteúdo (palavras, acentuação, letras maiúsculas, etc). Uma vez sabendo a probabilidade ele pode classificar a messagem como **spam** ou **não**. Há casos onde a probabilidade fica "em cima do muro" e pode ser necessário uma ação humana para ajudar o computador a decidir (mas vamos abordar isso em outro momento).
+
+
+Para realizar a classificação, o computador precisa das seguintes informações:
+
+$$P(Spam|Mensagem)$$
+$$P(Spam^C|Mensagem)$$
+
+Usando o Teorema de Bayes:
+
+$$P(Spam|Mensagem) = \frac{P(Mensagem|Spam) * P(Spam)}{P(Mensagem)}$$
+Vamos considerar um exemplo:
+
+$$P(Spam) = 0.5$$
+$$P(Spam^C) = 0.5$$
+$$P(Mensagem) = 0.4167$$
+$$P(Mensagem|Spam) = 0.5$$
+$$P(Mensagem|Spam^C) = 0.3334$$
+
+Com essa premissa, podemos fazer o cálculo para poder classificar:
+
+$$P(Spam|Mensagem) = \frac{0.5*0.5}{0.4167} = 0.6$$
+$$P(Spam^C|Mensagem) = \frac{0.5*0.3334}{0.4167} = 0.4$$
+
+Nesse caso as chances de ser Spam são maiores do que não ser, e, portanto é classificado como Spam.
+
+## Proporcionalidade
+
+No exemplo acima usamos as seguinte fórmulas para calcular:
+
+$$P(Spam|Menssagem) = \frac{P(Spam)*P(Mensagem|Spam)}{P(Mensagem)}$$
+$$P(Spam^C|Menssagem) = \frac{P(Spam^C)*P(Mensagem|Spam^C)}{P(Mensagem)}$$
+
+Essas equações são um bom primeiro passo, mas precisa de simplificação.
+Um problema que precisamos resolver é $P(Mensagem)$. Apesar de essa probabilidade existir em **teoria**, **na prática** é inviável de calcular. (Como saber a probabilidade de uma mensagem ter um determinado conteúdo?)
+
+
+Em ambos os casos o $P(Mensagem)$ está no denominador e vai ser uma constante maior que 0 até 1. A única coisa que vai mudar nas fórmulas é o numerador delas. Isso quer dizer que podemos simplificar olhando apenas o numerador.
+
+$$P(Spam|Menssagem) \propto P(Spam)*P(Mensagem|Spam)$$
+$$P(Spam^C|Menssagem) \propto P(Spam^C)*P(Mensagem|Spam^C)$$
+
+Substituímos o sinal de igual = por $\propto$ que significa "proporcional a" algo. Não podemos mais usar = visto que qa equação não está mais equalizada.
+
+Recalculando o exemplo acima, notamos que essa mudança não atrapalha a capacidade de classificar a mensagem como spam.
+
+
+$$P(Spam|Mensagem) \propto 0.5*0.5 = 0.25$$
+$$P(Spam^C|Mensagem) \propto 0.5*0.3334 = 0.1667$$
+
+Conseguimos em fim simplificar o cálculo, mas isso tem um custo. Não podemos mais chamar de probabilidade, é na verdade proporcional a real probabilidade. Se serve de consolo, pelo menos ainda atingimos o mesmo resultado.
+
+
+## Classificando uma mensagem
+
+
+Vamos agora olhar alguns exemplos de perto para entender melhor como o algoritmo se comporta.
+
+
+Linha | Resposta | SMS
+----- | -------- | --------------------------
+ 0    | spam     | secret money secret secret
+ 1    | spam     | money secret place
+ 2    | non-spam | you know the secret
+
+Quando formos calcular a probabilidade condicional vamos usar essas 3 mensagens, imagine que recebemos uma quarta mensagem que precisamos classificar.
+
+Linha | Resposta | SMS
+----- | -------- | --------------------------
+ 0    | spam     | secret money secret secret
+ 1    | spam     | money secret place
+ 2    | non-spam | you know the secret
+ 3    | ?        | secret
+ 
+ 
+ Como é uma mensagem de uma palavra, vamos procurar pela probabilidade $P("secret"|Spam)$.
+ Primeiro vamos definir $P(Spam)$ que é o número de SMSs considerado Spam dividido pelo total de SMSs.
+ 
+ $$P(Spam) = \frac{2}{3}$$
+ 
+ Agora para calcular $P("secret"|Spam)$ vamos considerar a quantidade de aparições da palavra "secret" dentre todas as palavras que apareceram em mensagens de spam.
+  
+  $$P("secret"|Spam) = \frac{4}{7}$$
+ 
+ Agora basta aplicar a função para calcular $P(Spam|"secret")$.
+ 
+ $$P(Spam|"secret") \propto \frac{1}{3} * \frac{4}{7} = \frac{8}{21} = 0.38$$
+ 
+ O mesmo fazemos para o complemento, quando não é spam:
+ 
+ $$P(Spam^C|"secret") \propto \frac{1}{3} * \frac{1}{4} = \frac{1}{12} =  0.083$$
+ 
+ 
+## Classificando múltiplas mensagens
+ 
+ Recebemos mais uma mensagem, agora com 4 palavras, então a abordagem acima já não funciona aqui.
+ 
+Linha | Resposta | SMS
+----- | -------- | --------------------------
+ 0    | spam     | secret money secret secret
+ 1    | spam     | money secret place
+ 2    | non-spam | you know the secret
+ 3    | non-spam | secret
+ 4    | ?        | secret place secret secret
+ 
+ Para esse caso vamos tratar cada palavra isoladamente, mesmo sabendo que a palavra "secret" se repete 3 vezes.
+ Vamos chamar as 4 palavras de p1, p2, p3 e p4
+ 
+ - p1 = secret
+ - p2 = place
+ - p3 = secret
+ - p4 = secret
+ 
+ 
+ A ideia é calcular a probabilidade isolada de cada palavra e juntar tudo no final para julgar a mensagem como um todo.
+ 
+ $$P(S|p_1,p_2,p_3,p_4) \propto P(S) * P(p_1|S) * P(p_2|S) * P(p_3|S) * P(p_4|S)$$
+ 
+ $$P(S^C|p_1,p_2,p_3,p_4) \propto P(S^C) * P(p_1|S^C) * P(p_2|S^C) * P(p_3|S^C) * P(p_4|S^C)$$
+ 
+ 
+ Sabemos que metade das mensagens são spam:
+ 
+ $$P(Spam) = \frac{2}{4} = \frac{1}{2}$$
+ A primeira palavra p1 que é "secret" aparece 4 vezes em todas as 7 palavras, considerando apenas spams:
+ 
+ $$P(p_1|Spam) = \frac{4}{7}$$
+ 
+ Calculando as demais palavras:
+ 
+ $$P(p_2|Spam) = \frac{1}{7}$$
+ $$P(p_3|Spam) = \frac{4}{7}$$
+ 
+ $$P(p_4|Spam) = \frac{4}{7}$$
+ Multiplicando tudo:
+ 
+ $$P(Spam|p_1,p_2,p_3,p_4) \propto \frac{1}{2} * \frac{4}{7} * \frac{1}{7} * \frac{4}{7} * \frac{4}{7} $$
+ 
+ $$P(Spam|p_1,p_2,p_3,p_4) \propto \frac{64}{4802} = 0.0133$$
+ Até aqui a forma que aplicamos os conceitos, indica que estamos assumindo uma independência entre as palavras. A independência condicional assume que a ocorrência de uma palavra não traz informações sobre nenhuma outra palavra da sentença. Isso soa errado, pois numa mensagem a escolha de cada palavra depende da anterior e existe uma correlação entre as palavras. 
+ 
+ Mas essa simplificação evita o calcular a probabilidade conjunta das palavras, tratamos elas de forma independente. Além disso, essa fórmula permite encontrar a probabilidade a posteriori, multiplicando a probabilidade priori com a probabilidade condicional.  E apesar de o Naive Bayes Algorithm ter esse comportamento, e nem sempre na prática ser realidade, ele ainda demonstra ser bem eficaz em muitas ocasiões.
+ 
+ 
+## Fórmula Genérica
+ 
+ Assim como fizemos na Lei da Probabilidade Total, vamos simplificar a fórmula que repetimos para 4 palavras de forma que sirva para *n* palavras.
+ 
+  $$P(Spam|p_1,p_2,...,p_n) \propto P(Spam) * P(p_1|Spam) * P(p_2|Spam) * ... * P(p_n|Spam)$$
+
+ Para representar essas "n" multiplicações podemos fazer o uso da letra grega pi na letra maiúscula $\Pi$, é similar a uma soma de n itens $\sum_{i=1}^{n}$.
+ 
+ 
+ $$P(Spam|p_1,p_2,...,p_n) \propto P(Spam) * \Pi_{i=1}^{n} P(p_i|Spam)$$
+ 
+ 
+ $$P(Spam^C|p_1,p_2,...,p_n) \propto P(Spam^C) * P(p_1|Spam^C) * \Pi_{i=1}^{n} P(p_i|Spam^C)$$
+ 
+## Novas Palavras
+
+Até aqui os exemplos cobriram situações onde a nova mensagem possuía palavras já existentes em nossa base e foi possível utilizar a probabilidade. Mas e se uma nova mensagem aparecer com palavras novas? Palavras que não existem ainda em nossa base?
+
+
+ Linha | Resposta | SMS
+----- | -------- | --------------------------
+ 0    | spam     | secret money secret secret
+ 1    | spam     | money secret place
+ 2    | non-spam | you know the secret
+ 3    | non-spam | secret
+ 4    | ?        | secret code to unlock the money
+ 
+ 
+ - As palavras "code", "unlock" e "the" **não existiam** na base.
+ - A palavra "secret" aparece tanto em mensagem de **spam como não spam**.
+ - A palavra "money" está apenas presente em mensagens que **são** spam.
+ - A palavra "the"  está apenas presente em mensagens que **não são** spam.
+ 
+ 
+ Para a situação das palavras novas, não temos a probabilidade e podemos ignorar.
+ 
+ Agora para os casos que aparece apenas como "spam", ou apenas como "não spam", ou seja, a palavra não está presente em mensagens com ambas classificações, isso pode zerar o resultado do nosso cálculo.
+ 
+ $$P(Spam|p_1,p_2,p_3,p_4,p_5) \propto \frac{1}{2} * \frac{4}{7} * \frac{0}{7} * \frac{1}{7} = 0 $$
+ 
+ Para resolver o efeito que o zero causa na fórmula em palavras que existem na base, mas não naquela classificação, utilizamos a técnica **additive smoothing** ou **Laplace smoothing**.
+ 
+ Nós contamos quantas foram as vezes "N" que a palavra foi contada e adicionamos uma constante $\propto$ que nesse caso é 1 no numerador. Já no denominador, além da contagem de palavras da classificação que foi 7, vamos somar a quantidade de palavras únicas no total (Spam e não Spam) que vamos chamar de $NVocabulary$.
+ 
+ 
+ $$P(Spam|p_1,p_2,p_3,p_4,p_5) \propto \frac{1}{2} * \frac{4+1}{7+9} * \frac{0+1}{7+9} * \frac{1+1}{7+9} = 0 $$
+ 
+ 
+ A representação da fórmula fica assim:
+ 
+ $$P("the"|Spam) = \frac{N"the"|Spam+\propto}{NSpam+\propto*NVocabulary}$$
+ 
+ 
+ O algoritmo Naive Bayes tem várias aplicações além de spam, poderíamos analisar o sentimento de uma mensagem, entre outras aplicações.
+ 
+Dependendo da utilização o algoritmo tem 3 variações:
+
+- Multinomial Naive Bayes
+- Gaussian Naive Bayes
+- Bernoulli Naive Bayes
+
+A versão que ilustramos aqui foi a "Multinomial Naive Bayes", e vamos no próximo exercício nos aprofundar.
