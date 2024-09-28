@@ -1,0 +1,206 @@
+---
+title: "Probability Distributions"
+output: 
+  pdf_document:
+      latex_engine: xelatex
+fontsize: 12pt
+mainfont: "Arial"
+documentclass: scrartcl
+lang: pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(dplyr)
+library(glue)
+library(stringr)
+library(ggplot2)
+library(tidyr)
+library(tigerstats)
+
+
+options(scipen=999)
+```
+
+
+## Distribuição Uniforme
+
+Nos exercícios até aqui, cobrimos vários tópicos relacionados à probabilidade, conceitos, fórmulas através de exemplos de cenários reais como jogar um dado, uma moeda, retirar uma carta. Em alguns casos a chance de um resultado é igual para todos elementos, ao jogar um dado as chances de sair 1 ou 6 são iguais.
+
+
+```{r}
+dado_prob <- tibble(dados = seq(1,6),
+                    probs = 1/6)
+
+dado_prob %>% 
+  ggplot(aes(x=dados, y=probs)) +
+  geom_col()
+```
+
+Mas em geral isso não acontece, e veremos isso no decorrer dessa lição. Conhecer a distribuição de uma probabilidade nos ajuda a entender:
+
+- Qual resultado tem mais chance de ocorrer?
+- Qual seria a probabilidade de observar um intervalo de vários resultados ao invés de um?
+
+Nesse caso do dado, a distribuição é *flat* pois todas as saídas tem as mesmas chances de ocorrer, o mesmo resultado aconteceria para jogar uma moeda. Normalmente é dado um nome para o formato da distribuição, nesse caso chamamos de distribuição **uniforme**.
+
+Podemos inferir algumas informações ao se deparar com um gráfico como o mostrado acima, mesmo se o experimento fosse desconhecido.
+
+- De olhar o eixo x sabemos que o espaço amostral é $\Omega = {1,2,3,4,5,6}$
+- Sabemos que a probabilidade é algum valor entre 0 e 1, e que todas as saídas possíveis juntas somam 100%, ou seja se somarmos o resultado de todas as barras tem que somar 1.
+- Sabemos que não existe probabilidade mais que 1 ou negativa
+
+É importante desrtacar que todas as probabilidades tem essas características, a distribuição uniforme só nos ajuda mais intuitivamente a entender isso.
+
+
+## Função de Distribuição de Probabilidade 
+
+Não vamos ter o tempo todo um gráfico à nossa disposição para visualmente entender a distribuição de uma probabilidade.
+No entanto podemos escrever isso no formato de função. No caso de jogar um dado, reaproveitando novamente o exemplo do gráfico acima, poderíamos representa-lo asism:
+
+$$P(X) = \frac{1}{6}, for\ i\ in [1,2,...,6]$$
+$$P(X) = 0, elsewhere$$
+
+Aqui descrevemos primeiro quais as probabilidades dos resultados do espaço amostral, e em segundo informamos como lidar com os resultados que não fazem parte do espaço amostral, nesse caso a probabilidade é zero para todo resto que não seja de 1 a 6.
+
+Sendo assim a probabilidade que vemos para o 1 também serve para o 6
+
+$$P(X = 1) = P(X = 6) = \frac{1}{6}$$
+
+
+## Exemplo: Soma de 2 dados
+
+Vamos imaginar um jogo onde é necessário somar o resultado de 2 dados jogados.
+Um jogador quer estudar a probabilidade das jogadas antes do grande jogo, para ter alguma vantagem.
+
+```{r}
+dois_dados <- 
+  matrix(c(2,3,4,5,6,7,
+           3,4,5,6,7,8,
+           4,5,6,7,8,9,
+           5,6,7,8,9,10,
+           6,7,8,9,10,11,
+           7,8,9,10,11,12), 
+        nrow = 6, 
+        ncol = 6, 
+        dimnames=list(c("Jogada 1","Jogada 2","Jogada 3","Jogada 4","Jogada 5","Jogada 6"),
+                      c("Jogada 1","Jogada 2","Jogada 3","Jogada 4","Jogada 5","Jogada 6")))
+dois_dados
+```
+Colocando isso numa tabela fica claro que a soma dos dados resultando em 7 é o que mais ocorre.
+Se calcularmos a probabilidade dessas jogadas, temos um gráfico onde o pico está no 7 que se repete 6 vezes e faz uma curva simétrica para os dois lados até atingir os extremos 2 e 12 que apenas acontecem uma vez.
+
+```{r}
+
+probabilidade <- 
+  dois_dados %>% 
+  as.data.frame() %>% 
+  pivot_longer(cols = everything(),names_to = "jogadas", values_to = "resultado") %>% 
+  group_by(resultado) %>% 
+  summarise(contagem = n()) %>% 
+  mutate(probabilidade = contagem/sum(contagem))
+
+probabilidade %>% 
+  ggplot(aes(x=resultado, y=probabilidade)) +
+  geom_col()
+```
+
+Ou seja para o jogo, as chances de conseguir um 7 são maiores e se o jogo depender disso terá mais chances de ganhar.
+
+
+## Probabilidade Cumulativa
+
+Continuando o último exemplo da soma dos 2 dados, vimos que tanto no gráfico quanto pela função que podemos encontrar facilmente a probabilidade de um resultado. Mas e se nosso interesse está em mais de um resultado?
+
+Digamos que queremos saber a probabilidade de a soma ser menor igual a 3? Nesse caso estamos falando de 2 resultados, 2 e 3, sendo que o 2 tem apenas 1 chance de acontecer, e 3 tem 2 chances de acontecer.
+
+$$P(X \le 3) = P(X = 2) + P(X = 3) = \frac{1}{36} + \frac{2}{36}$$
+
+Quando apresentamos uma condição que abrange vários resultados, nós estamos falando de **Probabilidade Cumulativa**. É esperado, quando se fala em probabilidade cumulativa, de ir juntando as probabilidades de resultados até certo ponto, normalmente usando menor, menor igual, maior igual, etc.
+
+Se já conseguimos descobrir a probabilidade da condição **menor igual a 3** podemos descobrir a probabilidade de **maior que 3** que abrange todos resultados que não entraram na primeira condição, são o complemento.
+
+$$P(X > 3) = 1 -\frac{3}{36} = \frac{33}{36}$$
+
+Dessa forma podemos generalizar a fórmula dessa forma:
+
+$$P(X > n) = 1 - P(x \le n)$$
+
+## De experimentos aleatórios para experimentos reais
+
+Usar exemplos de dados nos ajudam a entender sobre como a distribuição de probabilidade funciona. E isso vai ser importante visto que no Teste de Hipóteses precisamos entender como os dados estão distribuídos.
+
+Nós podemos entender o processo de coleta de dados como um experimento por si só, pense num escritório onde se está coletando o peso das pessoas. É um dado contínuo e se escolhermos alguém aleatoriamente não temos como afirmar com certeza qual será seu peso.
+
+
+Então conforme coletamos dados, estamos essencialmente executando um experimento aleatório, e ao gerar uma visualização dos dados, estaremos vendo uma distribuição dos dados empírica. São dados observados, evidências, de algo que realmente aconteceu.
+
+E você pode se perguntar: tá e qual a diferença entre a distribuição de probabilidade e distribuição empírica?
+Para calcular a exata probabilidade de cada resultado e plotar gráficos da distribuição de probabilidade precisamos saber o espaço amostral completo. Na vida real dificilmente vamos ter todos esses dados, então nos baseamos nas observações.
+
+
+Se coletarmos dados do peso de 50 pessoas, os dados vão representar bem aquelas 50 pessoas, mas não as pessoas no geral. Mas conforme nós  coletamos mais e mais dados, eles passam a cada vez se aproximar mais da distribuição de probabilidade teórica.
+
+
+## A Distribuição Normal
+
+Sem dúvidas, a distribuição mais famosa é a **distribuição normal**. Às vezes chamada de curva do sino pelo formato característico, muitos fenômenos da vida podem ser visualizados nesse formato, um exemplo é a distribuição de QI.
+
+Imaginando que temos uma distribuição empírica que tem o formato da distribuição normal, apesar de não ser 100% exato é uma boa aproximação e portanto podemos usufruir de funções no R que são dedicadas a esse formato.
+
+Todas as características que aprendemos ao longo do curso se aplicam à distribuição normal, mas temos que nos atentar de algumas diferenças. Nos exemplos que trouxemos (exceto o peso) foram todos distribuições discretas, o que é diferente de dados contínuos. Por exemplo a jogada de 2 dados somados tem valores de 2 a 12, porém sem decimais como 4.5.
+
+A distribuição normal é contínua, significa que pode assumir qualquer valor dado um intervalo.
+
+Outra característica dessa distribuição é que basicamente 2 valores à definem: **a média** e **a variância**. Tendo esses valores já é possível plotar no gráfico a posição da curva e sua abertura, se tem um pico maior ou é mais achatada.
+
+
+## Função de Densidade de Probabilidade
+
+Em caso de curiosidade, essa é a fórmula que produz uma distribuição normal:
+
+$$P(X = x) = \frac{1}{\sqrt{2\pi\sigma^2}}e^-\frac{1}{2\sigma^2}(x-\mu)^2$$
+
+
+A média é representada pela letra $\mu$ e a variância por $\sigma^2$. Um resultado específico é representado por $x$, enquanto que o experimento em si é $X$. Podemos ler $P(X = x)$ como "a densidade de probabilidade que o experimento assume com o valor x". Chamamos de densidade visto que aquele valor específico não é uma probabilidade, é só uma forma de ilustrar o quanto um elemento está próximo do outro. Se 0 tem maior densidade que 1, significa que 0 tem mais chances de acontecer.
+
+Na prática não vamos utilizar essa fórmula quando trabalhamos com a linguagem R, visto que temos muitas funções que podem nos apoiar nos cálculos. Uma função famosa é a ```dnorm()```, onde o "d" é de densidade e "norm" faz referência a distribuição normal. Ela precisa de um argumento por padrão, e tem 2 opcionais.
+
+O primeiro argumento é o $x$ que é o valor para o qual queremos ver a densidade $P(X = x)$. O 1º argumento opcional é "mean", a média da distribuição. O 2º argumento "sd" é o desvio padrão, se você está trabalhando com a variância que é $\sigma^2$ é preciso calcular a raiz quadrada da variância para obter o desvio padrão. Caso você não informe os argumentos opcionais, a função vai assumir mean = 0 e sd = 1 por padrão.
+
+Vamos imaginar que queremos ver a densidade de um exemplo hipotético onde uma pessoa leva 90 segundos estudando um tópico com uma variância de 15. O resultado da densidade de probabilidade é de 0.10.
+
+```{r}
+dnorm(90, mean = 90, sd = sqrt(15))
+```
+
+## Probabilidade Cumulativa
+
+
+E como calculamos a probabilidade cumulativa numa curva normal? Isso requer um pouco de conhecimento em cálculo, mas felizmente temos a função pronta ```pnorm()``` para nos ajudar, é bastante similar a função que vimos logo acima.
+A diferença é que o arumento obrigatório não vai olhar apenas aquele valor isoladamente, ele vai calcular até aquele valor $P(X \le x)$.
+
+Vamos pegar um exemplo simples, uma curva normal de média 0 e desvio padrão 1, onde queremos calcular a probabilidade cumulativa de 1. 
+```{r}
+pnorm(1)
+```
+Ou seja isso vai abranger desde o valor mais negativo da ponta esquerda do gráfico, passar pela média até o primeiro desvio padrão. Isso representa mais de 84% de probabilidade.
+
+```{r}
+pnormGC(1, mean=0, sd=1, graph=TRUE)
+```
+
+Agora se quisermos um intervalo da curva, que não considere o começo da curva, por exemplo, podemos calcular assim:
+
+```{r}
+pnorm(1) - pnorm(-1)
+```
+
+
+```{r}
+pnormGC(c(-1,1), region = "between", mean=0, sd=1, graph=TRUE)
+```
+
+
